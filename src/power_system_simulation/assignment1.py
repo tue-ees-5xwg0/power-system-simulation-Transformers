@@ -1,177 +1,169 @@
 """
-This is a skeleton for the graph processing assignment.
+This is the graph processing assignment.
 
-We define a graph processor class with some function skeletons.
 """
-
 from typing import List, Tuple
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import networkx as nx
 
 
 class IDNotFoundError(Exception):
-    pass
+    """Raised when the vertex ID is not valid"""
 
 
 class InputLengthDoesNotMatchError(Exception):
-    """Input length does not match error"""
+    """Raised when the edge list does not match the input list"""
 
 
 class IDNotUniqueError(Exception):
-    pass
+    """Raised if duplicate vertex or edge ID"""
 
 
 class GraphNotFullyConnectedError(Exception):
-    pass
+    """Raised when there are unconnected nodes in the graph"""
 
 
 class GraphCycleError(Exception):
-    pass
+    """Raised if the graph contains a cycle"""
 
 
 class EdgeAlreadyDisabledError(Exception):
-    pass
+    """Raised when an edge is already disabled"""
 
 
 class GraphProcessor:
-    """
-    General documentation of this class.
-    You need to describe the purpose of this class and the functions in it.
-    We are using an undirected graph in the processor.
-    """
+    """A class for processing undirected graphs"""
 
     def _init_(
         self,
-        # node --> vertex
         vertex_ids: List[int],
         edge_ids: List[int],
         edge_vertex_id_pairs: List[Tuple[int, int]],
         edge_enabled: List[bool],
         source_vertex_id: int,
-    ):
-        """
-        Initialize a graph processor object with an undirected graph.
-        Only the edges which are enabled are taken into account.
-        Check if the input is valid and raise exceptions if not.
-        The following conditions should be checked:
-            1. vertex_ids and edge_ids should be unique. (IDNotUniqueError)
-            2. edge_vertex_id_pairs should have the same length as edge_ids. (InputLengthDoesNotMatchError)
-            3. edge_vertex_id_pairs should contain valid vertex ids. (IDNotFoundError)
-            4. edge_enabled should have the same length as edge_ids. (InputLengthDoesNotMatchError)
-            5. source_vertex_id should be a valid vertex id. (IDNotFoundError)
-            6. The graph should be fully connected. (GraphNotFullyConnectedError)
-            7. The graph should not contain cycles. (GraphCycleError)
-        If one certain condition is not satisfied, the error in the parentheses should be raised.
-
-        Args:
-            vertex_ids: list of vertex idsx
-            edge_ids: liest of edge ids
-            edge_vertex_id_pairs: list of tuples of two integer
-                Each tuple is a vertex id pair of the edge.
-            edge_enabled: list of bools indicating of an edge is enabled or not
-            source_vertex_id: vertex id of the source in the graph
-        """
+    ) -> None:
         self.vertex_ids = vertex_ids
         self.edge_ids = edge_ids
         self.edge_vertex_id_pairs = edge_vertex_id_pairs
         self.edge_enabled = edge_enabled
         self.source_vertex_id = source_vertex_id
 
-        if len(vertex_ids) != len(vertex_ids):
-            raise InputLengthDoesNotMatchError()
-
+        # Check uniqueness of vertex and edge IDs
         if not (set(vertex_ids).isdisjoint(set(edge_ids))):
-            raise IDNotUniqueError()
+            raise IDNotUniqueError("Duplicate vertex or edge ID")
 
-        if source_vertex_id not in vertex_ids:
-            raise IDNotFoundError()
+        # Compare the length of the edge vertex ID pairs with the edge IDs
+        if len(edge_vertex_id_pairs) != len(edge_ids):
+            raise InputLengthDoesNotMatchError("Edge list does not match the input list")
+
+        # Check if the vertex pairs IDs are valid IDs
+        for node1, node2 in edge_vertex_id_pairs:
+            if node2 not in vertex_ids or node1 not in vertex_ids:
+                raise IDNotFoundError("Vertex ID is not valid")
+
+        # Check if the number of enabled edges is the same as the number of edge IDs
         if len(edge_enabled) != len(edge_ids):
-            raise InputLengthDoesNotMatchError()
+            raise InputLengthDoesNotMatchError("Edge list does not match the input list")
 
+        # Check if the source vertex ID is a valid ID
+        if source_vertex_id not in vertex_ids:
+            raise IDNotFoundError("Duplicate vertex or edge ID")
+
+        # Initialize graph
         self.G = nx.Graph()
         self.G.add_nodes_from(vertex_ids)
 
+        # Add edged to the graph
         for edge_vertex_id_pair, enabled, edge_ids in zip(edge_vertex_id_pairs, edge_enabled, edge_ids):
             if enabled:
                 self.G.add_edge(*edge_vertex_id_pair, id=edge_ids)
 
-        for node1, node2 in edge_vertex_id_pairs:
-            if node2 not in vertex_ids or node1 not in vertex_ids:
-                raise IDNotFoundError()
+        # Check if graph is connected
         if not list(nx.isolates(self.G)):
             raise GraphNotFullyConnectedError()
 
+        # Check if the graph contains cycles
         try:
             nx.find_cycle(self.G)
             raise GraphCycleError()
         except nx.NetworkXNoCycle:
             pass
 
-    def find_downstream_vertices(self, edge_id: int) -> List[int]:
-        """
-        Given an edge id, return all the vertices which are in the downstream of the edge,
-            with respect to the source vertex.
-            Including the downstream vertex of the edge itself!
+    def find_downstream_vertices(self, first_edge_id: int) -> List[int]:
+        """Find downstream vertices"""
+        # We check if the given edge ID is valid
+        if first_edge_id not in self.edge_ids:
+            raise IDNotFoundError()
 
-        Only enabled edges should be taken into account in the analysis.
-        If the given edge_id is a disabled edge, it should return empty list.
-        If the given edge_id does not exist, it should raise IDNotFoundError.
+        # We check if the given edge is enabled
+        index = self.edge_ids.index(first_edge_id)
+        if not self.edge_enabled[index]:
+            return []
 
+        # We get the vertices of the edge and we temporarily remove the edge
+        vertex1, vertex2 = self.edge_vertex_id_pairs[index]
+        self.G.remove_edge(vertex1, vertex2)
 
-        For example, given the following graph (all edges enabled):
+        # Find all the connections after the removal
+        connected = list(nx.connected_components(self.G))
 
-            vertex_0 (source) --edge_1-- vertex_2 --edge_3-- vertex_4
+        # Returning to the original graph state
+        self.G.add_edge(vertex1, vertex2)
 
-        Call find_downstream_vertices with edge_id=1 will return [2, 4]
-        Call find_downstream_vertices with edge_id=3 will return [4]
+        # Find the component that contains the source vertex
+        source = next(comp for comp in connected if self.source_vertex_id in comp)
 
-        Args:
-            edge_id: edge id to be searched
+        # Find the nodes that do not contain the source vertex
+        for comp in connected:
+            if comp != source:
+                return list(comp)
 
-        Returns:
-            A list of all downstream vertices.
-        """
-        # put your implementation here
-        pass
+        return []
 
     def find_alternative_edges(self, disabled_edge_id: int) -> List[int]:
-        """
-        Given an enabled edge, do the following analysis:
-            If the edge is going to be disabled,
-                which (currently disabled) edge can be enabled to ensure
-                that the graph is again fully connected and acyclic?
-            Return a list of all alternative edges.
-        If the disabled_edge_id is not a valid edge id, it should raise IDNotFoundError.
-        If the disabled_edge_id is already disabled, it should raise EdgeAlreadyDisabledError.
-        If there are no alternative to make the graph fully connected again, it should return empty list.
+        """Find alternative edges"""
+        # We check if the given edge ID is valid
+        if disabled_edge_id not in self.edge_ids:
+            raise IDNotFoundError()
 
+        # We check if the given edge ID is already disabled
+        index = self.edge_ids.index(disabled_edge_id)
+        if not self.edge_enabled[index]:
+            raise EdgeAlreadyDisabledError()
 
-        For example, given the following graph:
+        # We find all the disabled edge IDs in the graph
+        disabled_edges = [self.edge_ids[i] for i, enabled in enumerate(self.edge_enabled) if not enabled]
 
-        vertex_0 (source) --edge_1(enabled)-- vertex_2 --edge_9(enabled)-- vertex_10
-                 |                               |
-                 |                           edge_7(disabled)
-                 |                               |
-                 -----------edge_3(enabled)-- vertex_4
-                 |                               |
-                 |                           edge_8(disabled)
-                 |                               |
-                 -----------edge_5(enabled)-- vertex_6
+        # Empty list in case there are no alternatives to make the graph fully connected again
+        alt_list = []
 
-        Call find_alternative_edges with disabled_edge_id=1 will return [7]
-        Call find_alternative_edges with disabled_edge_id=3 will return [7, 8]
-        Call find_alternative_edges with disabled_edge_id=5 will return [8]
-        Call find_alternative_edges with disabled_edge_id=9 will return []
+        # Create a dictionary with the states of all edges in the graph and disable the given edge
+        edge_status_map = {edge_id: enabled for edge_id, enabled in zip(self.edge_ids, self.edge_enabled)}
+        edge_status_map[disabled_edge_id] = False
 
-        Args:
-            disabled_edge_id: edge id (which is currently enabled) to be disabled
+        # We take all disabled edges one by one and enable them again to test for their feasbility by recreating the graph for each scenario
+        for test_edge_id in disabled_edges:
+            temp_status_map = edge_status_map.copy()
+            temp_status_map[test_edge_id] = True
 
-        Returns:
-            A list of alternative edge ids.
-        """
-        # put your implementation here
-        pass
+            temp_graph = nx.Graph()
+            temp_graph.add_nodes_from(self.vertex_ids)
+            for eid, (vertex1, vertex2) in zip(self.edge_ids, self.edge_vertex_id_pairs):
+                if temp_status_map[eid]:
+                    temp_graph.add_edge(vertex1, vertex2, id=eid)
+            # Check if the new graph is connected and check for cycles; If no cycle is found, add the edge ID to the alternative list
+            if nx.is_connected(temp_graph):
+                try:
+                    nx.find_cycle(temp_graph)
+                    has_cycle = True
+                except nx.NetworkXNoCycle:
+                    has_cycle = False
+
+                if not has_cycle:
+                    alt_list.append(test_edge_id)
+
+        return alt_list
 
 
 vertex_ids = [1, 2, 3, 4, 5]
