@@ -2,6 +2,7 @@
 This is the graph processing assignment.
 
 """
+
 from typing import List, Tuple
 
 # import matplotlib.pyplot as plt
@@ -34,8 +35,7 @@ class EdgeAlreadyDisabledError(Exception):
 
 class GraphProcessor:
     """A class for processing undirected graphs"""
-
-    def _init_(
+    def __init__(
         self,
         vertex_ids: List[int],
         edge_ids: List[int],
@@ -50,7 +50,7 @@ class GraphProcessor:
         self.source_vertex_id = source_vertex_id
 
         # Check uniqueness of vertex and edge IDs
-        if not (set(vertex_ids).isdisjoint(set(edge_ids))):
+        if not set(vertex_ids).isdisjoint(set(edge_ids)):
             raise IDNotUniqueError("Duplicate vertex or edge ID")
 
         # Compare the length of the edge vertex ID pairs with the edge IDs
@@ -71,21 +71,21 @@ class GraphProcessor:
             raise IDNotFoundError("Duplicate vertex or edge ID")
 
         # Initialize graph
-        self.G = nx.Graph()
-        self.G.add_nodes_from(vertex_ids)
+        self._graph = nx.Graph()
+        self._graph.add_nodes_from(vertex_ids)
 
         # Add edged to the graph
-        for edge_vertex_id_pair, enabled, edge_ids in zip(edge_vertex_id_pairs, edge_enabled, edge_ids):
+        for edge_vertex_id_pair, enabled, edge_id in zip(edge_vertex_id_pairs, edge_enabled, edge_ids):
             if enabled:
-                self.G.add_edge(*edge_vertex_id_pair, id=edge_ids)
+                self._graph.add_edge(*edge_vertex_id_pair, id=edge_id)
 
         # Check if graph is connected
-        if not list(nx.isolates(self.G)):
+        if not list(nx.isolates(self._graph)):
             raise GraphNotFullyConnectedError()
 
         # Check if the graph contains cycles
         try:
-            nx.find_cycle(self.G)
+            nx.find_cycle(self._graph)
             raise GraphCycleError()
         except nx.NetworkXNoCycle:
             pass
@@ -103,13 +103,13 @@ class GraphProcessor:
 
         # We get the vertices of the edge and we temporarily remove the edge
         vertex1, vertex2 = self.edge_vertex_id_pairs[index]
-        self.G.remove_edge(vertex1, vertex2)
+        self._graph.remove_edge(vertex1, vertex2)
 
         # Find all the connections after the removal
-        connected = list(nx.connected_components(self.G))
+        connected = list(nx.connected_components(self._graph))
 
         # Returning to the original graph state
-        self.G.add_edge(vertex1, vertex2)
+        self._graph.add_edge(vertex1, vertex2)
 
         # Find the component that contains the source vertex
         source = next(comp for comp in connected if self.source_vertex_id in comp)
@@ -139,10 +139,11 @@ class GraphProcessor:
         alt_list = []
 
         # Create a dictionary with the states of all edges in the graph and disable the given edge
-        edge_status_map = {edge_id: enabled for edge_id, enabled in zip(self.edge_ids, self.edge_enabled)}
+        edge_status_map = dict(zip(self.edge_ids, self.edge_enabled))
         edge_status_map[disabled_edge_id] = False
 
-        # We take all disabled edges one by one and enable them again to test for their feasbility by recreating the graph for each scenario
+        # We take all disabled edges one by one and enable them again to test for their feasbility
+        # by recreating the graph for each scenario
         for test_edge_id in disabled_edges:
             temp_status_map = edge_status_map.copy()
             temp_status_map[test_edge_id] = True
@@ -152,7 +153,8 @@ class GraphProcessor:
             for eid, (vertex1, vertex2) in zip(self.edge_ids, self.edge_vertex_id_pairs):
                 if temp_status_map[eid]:
                     temp_graph.add_edge(vertex1, vertex2, id=eid)
-            # Check if the new graph is connected and check for cycles; If no cycle is found, add the edge ID to the alternative list
+            # Check if the new graph is connected and check for cycles; If no cycle is found, add
+            # the edge ID to the alternative list
             if nx.is_connected(temp_graph):
                 try:
                     nx.find_cycle(temp_graph)
@@ -164,17 +166,4 @@ class GraphProcessor:
                     alt_list.append(test_edge_id)
 
         return alt_list
-
-
-vertex_ids = [1, 2, 3, 4, 5]
-
-edge_ids = [101, 102, 103, 104]
-
-edge_vertex_id_pairs = [
-    (1, 2),
-    (2, 3),
-    (3, 4),
-    (4, 5),
-]
-
-edge_enabled = [True, True, True, True]
+    
