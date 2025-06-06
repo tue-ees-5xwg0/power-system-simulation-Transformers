@@ -32,7 +32,6 @@ class GraphCycleError(Exception):
 class EdgeAlreadyDisabledError(Exception):
     """Raised when an edge is already disabled"""
 
-
 class GraphProcessor:
     """A class for processing undirected graphs"""
     def __init__(
@@ -80,7 +79,7 @@ class GraphProcessor:
                 self._graph.add_edge(*edge_vertex_id_pair, id=edge_id)
 
         # Check if graph is connected
-        if not list(nx.isolates(self._graph)):
+        if not nx.is_connected(self._graph):
             raise GraphNotFullyConnectedError()
 
         # Check if the graph contains cycles
@@ -165,5 +164,57 @@ class GraphProcessor:
                 if not has_cycle:
                     alt_list.append(test_edge_id)
 
+        # disabled_edges = [self.edge_ids[i] for i in range(len(self.edge_ids)) if not self.edge_enabled[i]]
+        # # 2. check if edge is not already disabled
+        # if disabled_edge_id not in self.edge_ids:
+        #     raise IDNotFoundError
+        # if disabled_edge_id in disabled_edges:
+        #     raise EdgeAlreadyDisabledError
+
+        # alt_list = []
+
+        # # 3. create copy of list and update list
+        # disabled_edges_new = copy.copy(disabled_edges)
+        # disabled_edges_new.append(disabled_edge_id)
+
+        # # 4. create list of all edges with vertex pairs, enabling and ID (vertex_pair,(dis)/(en)abled,id)
+        # full_edge_list = list(zip(self.edge_vertex_id_pairs, self.edge_enabled, self.edge_ids))
+        # # 5. the edge with id = disabled_edge_id is disabled and list is updated
+        # new_full_edge_list = [
+        #     (vertex_pair, False if edge_id == disabled_edge_id else enabled, edge_id)
+        #     for vertex_pair, enabled, edge_id in full_edge_list
+        # ]
+
+        # # 6. the originally disabled edges are iterated through and enabled in sequence
+        # # iterate disabled_edges:
+        # i = 0
+        # while i < len(disabled_edges):
+        #     # for each originally disabled edge, a new graph is created in which a new list of edges is
+        #     # created (i.e. said edge is now enabled)
+        #     temp_full_edge_list = [
+        #         (vertex_pair, True if edge_id == disabled_edges[i] else enabled, edge_id)
+        #         for vertex_pair, enabled, edge_id in new_full_edge_list
+        #     ]
+
+        #     # new graph is made // all vertices are added // edges are added from previously updated edge list
+        #     new_graph = nx.Graph()
+        #     new_graph.add_nodes_from(self.vertex_ids)
+
+        #     for vertex_pair, enabled, edge_id in temp_full_edge_list:
+        #         if enabled:
+        #             new_graph.add_edge(*vertex_pair, id=self.edge_ids)
+
+        #     try:
+        #         nr_cycles = nx.find_cycle(new_graph)
+        #     except nx.NetworkXNoCycle:
+        #         nr_cycles = 0
+        #     connected = nx.is_connected(new_graph)
+
+        #     if nr_cycles == 0 and connected is True:
+        #         alt_list.append(disabled_edges[i])
+
+        #     i += 1
+
         return alt_list
     
+
