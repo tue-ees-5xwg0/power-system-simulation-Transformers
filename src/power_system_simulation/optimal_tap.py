@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 from power_grid_model.utils import json_deserialize, json_serialize_to_file
+
 from . import assignment2 as calc
 
 

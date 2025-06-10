@@ -1,8 +1,6 @@
 """
 Process power-system-simulation graphs.
 """
-from _future_ import annotations
-
 import numpy as np
 import pandas as pd
 from power_grid_model import (

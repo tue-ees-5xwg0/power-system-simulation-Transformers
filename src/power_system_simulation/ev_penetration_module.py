@@ -4,10 +4,11 @@ import random
 
 import numpy as np
 import pandas as pd
+from assignment1 import GraphProcessor as gp
 from power_grid_model import CalculationMethod, CalculationType, PowerGridModel, initialize_array
 from power_grid_model.utils import json_deserialize
 from power_grid_model.validation import assert_valid_batch_data
-from assignment1 import GraphProcessor as gp
+
 
 def ev_penetration(
     input_network_data: str,

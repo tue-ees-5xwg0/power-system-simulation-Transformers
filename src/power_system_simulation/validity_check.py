@@ -28,11 +28,10 @@ import numpy as np
 
 # Load dependencies and functions from calculation_module
 import pandas as pd
+from assignment1 import GraphProcessor as graph
 from power_grid_model import CalculationType
 from power_grid_model.utils import json_deserialize
 from power_grid_model.validation import assert_valid_input_data
-
-from assignment1 import GraphProcessor as graph
 
 
 class TooManyTransformers(Exception):
