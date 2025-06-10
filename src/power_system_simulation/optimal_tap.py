@@ -8,14 +8,12 @@ from . import assignment2 as calc
 
 class InvalidOptimizeInput(Exception):
     """Exception raised when user inputs an invalid optimize_by value."""
+
     pass
 
 
 def optimal_tap_position(
-    input_network_data: str,
-    active_power_profile_path: str,
-    reactive_power_profile_path: str,
-    optimize_by: int
+    input_network_data: str, active_power_profile_path: str, reactive_power_profile_path: str, optimize_by: int
 ) -> int:
     """
     Calculates the optimal transformer tap position based on user-defined optimization metric.

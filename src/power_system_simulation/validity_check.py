@@ -1,7 +1,7 @@
 """
 Validation Module
 
-This script defines a validation class with the following exceptions 
+This script defines a validation class with the following exceptions
 - **TimestampsDoNotMatchError** (Timestamps of active and reactive power profiles do not match.)
 - **LoadIdsDoNotMatchError** (Load IDs of active and reactive power profiles do not match.)
 - **IDNotFoundError** (Vertex ID present in edge_vertex_id_pairs does not exist.)

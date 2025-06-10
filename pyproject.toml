@@ -53,6 +53,11 @@ line_length = 120
 fail-under = 10
 max-line-length = 120
 
+[tool.pylint.DESIGN]
+max-positional-arguments=8
+max-args = 8
+
+
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.
 py-version = "3.12"

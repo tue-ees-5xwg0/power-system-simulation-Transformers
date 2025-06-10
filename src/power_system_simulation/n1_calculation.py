@@ -14,11 +14,13 @@ from prettytable import PrettyTable
 
 class IDNotFoundError(Exception):
     """The inserted line ID is not valid."""
+
     pass
 
 
 class LineIDNotConnectedOnBothSides(Exception):
     """The inserted line ID is not connected at both sides."""
+
     pass
 
 
@@ -57,8 +59,9 @@ def nm_function(
     vertex_ids = input_data["node"]["id"]
     edge_ids_init = np.array(input_data["line"]["id"])
     edge_vertex_id_pairs_init = list(zip(input_data["line"]["from_node"], input_data["line"]["to_node"]))
-    edge_enabled_init = (np.array(input_data["line"]["from_status"]) == 1) & \
-                         (np.array(input_data["line"]["to_status"]) == 1)
+    edge_enabled_init = (np.array(input_data["line"]["from_status"]) == 1) & (
+        np.array(input_data["line"]["to_status"]) == 1
+    )
     source_id = input_data["node"][0][0]
 
     edge_ids = np.concatenate([edge_ids_init, np.array(input_data["transformer"]["id"])])

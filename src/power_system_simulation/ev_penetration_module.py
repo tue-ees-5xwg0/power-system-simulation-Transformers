@@ -35,8 +35,9 @@ def ev_penetration(
     vertex_ids = input_data["node"]["id"]
     edge_ids_init = np.array(input_data["line"]["id"])
     edge_vertex_id_pairs_init = list(zip(input_data["line"]["from_node"], input_data["line"]["to_node"]))
-    edge_enabled_init = (np.array(input_data["line"]["from_status"]) == 1) & \
-                         (np.array(input_data["line"]["to_status"]) == 1)
+    edge_enabled_init = (np.array(input_data["line"]["from_status"]) == 1) & (
+        np.array(input_data["line"]["to_status"]) == 1
+    )
     source_id = input_data["node"][0][0]  # or meta_data
 
     edge_ids = np.concatenate([edge_ids_init, np.array(input_data["transformer"]["id"])])
@@ -89,8 +90,7 @@ def ev_penetration(
     model_2.update(update_data=update_data)
 
     output_data = model_2.calculate_power_flow(
-        update_data=update_data,
-        calculation_method=CalculationMethod.newton_raphson
+        update_data=update_data, calculation_method=CalculationMethod.newton_raphson
     )
 
     node_voltages = output_data["node"]["u_pu"]
@@ -106,17 +106,19 @@ def ev_penetration(
     max_voltage_node = node_ids[np.arange(len(node_voltages)), np.argmax(node_voltages, axis=1)]
     min_voltage_node = node_ids[np.arange(len(node_voltages)), np.argmin(node_voltages, axis=1)]
 
-    voltage_df = pd.DataFrame({
-        "Timestamp": timestamps,
-        "Max_Voltage": max_voltage,
-        "Max_Voltage_Node": max_voltage_node,
-        "Min_Voltage": min_voltage,
-        "Min_Voltage_Node": min_voltage_node
-    }).set_index("Timestamp")
+    voltage_df = pd.DataFrame(
+        {
+            "Timestamp": timestamps,
+            "Max_Voltage": max_voltage,
+            "Max_Voltage_Node": max_voltage_node,
+            "Min_Voltage": min_voltage,
+            "Min_Voltage_Node": min_voltage_node,
+        }
+    ).set_index("Timestamp")
 
     line_results = []
     for i, line_id in enumerate(np.unique(line_ids)):
-        mask = (line_ids == line_id)
+        mask = line_ids == line_id
         loadings = line_loadings[mask]
         max_loading = loadings.max()
         min_loading = loadings.min()
@@ -125,14 +127,16 @@ def ev_penetration(
         energy_losses = abs(p_from[:, i] + p_to[:, i])
         energy_loss_kwh = np.trapz(energy_losses) / 1000
 
-        line_results.append({
-            "Line_ID": line_id,
-            "Total_Loss": energy_loss_kwh,
-            "Max_Loading": max_loading,
-            "Max_Loading_Timestamp": max_loading_time,
-            "Min_Loading": min_loading,
-            "Min_Loading_Timestamp": min_loading_time
-        })
+        line_results.append(
+            {
+                "Line_ID": line_id,
+                "Total_Loss": energy_loss_kwh,
+                "Max_Loading": max_loading,
+                "Max_Loading_Timestamp": max_loading_time,
+                "Min_Loading": min_loading,
+                "Min_Loading_Timestamp": min_loading_time,
+            }
+        )
 
     line_df = pd.DataFrame(line_results).set_index("Line_ID")
     return voltage_df, line_df

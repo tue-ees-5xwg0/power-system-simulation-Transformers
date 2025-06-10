@@ -1,6 +1,7 @@
 """
 Process power-system-simulation graphs.
 """
+
 import numpy as np
 import pandas as pd
 from power_grid_model import (
@@ -61,9 +62,7 @@ def run_updated_power_flow_analysis(
     dataset: dict,
 ) -> dict:
     """Build update-array, validate, run Newton-Raphson, return raw output dict."""
-    update_data = initialize_array(
-        DatasetType.update, ComponentType.sym_load, active_df.shape
-    )
+    update_data = initialize_array(DatasetType.update, ComponentType.sym_load, active_df.shape)
     update_data["id"] = active_df.columns.to_numpy()
     update_data["p_specified"] = active_df.to_numpy()
     update_data["q_specified"] = reactive_df.to_numpy()
@@ -145,9 +144,7 @@ def data_processing(
     model_data_path: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Run full pipeline and return node- & line-level DataFrames."""
-    active_df, reactive_df, dataset = load_input_data(
-        active_data_path, reactive_data_path, model_data_path
-    )
+    active_df, reactive_df, dataset = load_input_data(active_data_path, reactive_data_path, model_data_path)
     output = run_updated_power_flow_analysis(active_df, reactive_df, dataset)
     node_df = node_voltage_summary(output, active_df.index)
     line_df = line_statistics_summary(output, active_df.index)

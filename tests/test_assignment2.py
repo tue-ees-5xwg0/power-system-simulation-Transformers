@@ -1,109 +1,126 @@
 """
-Unit tests for assignment2 helper functions.
-
-We keep the test completely independent from `power_grid_model`s heavy
-numerical engine by feeding in small, deterministic NumPy arrays.
+This module contains tests for the power system simulation assignment 2.
 """
-from _future_ import annotations
 
-import numpy as np
 import pandas as pd
+import pytest
 
-import sys, pathlib
-sys.path.insert(0, str(pathlib.Path(_file_).resolve().parents[1] / "src"))
-# import from your package ─────────────────────────────────────────
-from power_system_simulation.assignment2 import (  # adjust the import path if needed
-    ComponentType,
+from power_system_simulation.assignment2 import (
+    IDsDoNotMatchError,
+    TimestampMismatchError,
+    ValidationException,
     data_processing,
     line_statistics_summary,
+    load_input_data,
     node_voltage_summary,
+    run_updated_power_flow_analysis,
 )
 
-# tiny dummy data used by several tests
-TIMESTAMPS = pd.date_range("2024-01-01", periods=3, freq="H")
-
-# 3 × 3 matrix: (timestamps, nodes)
-NODE_U_PU = np.array(
-    [
-        [1.00, 0.95, 1.05],  # t0
-        [1.02, 0.98, 1.04],  # t1
-        [0.99, 0.97, 1.06],  # t2
-    ]
-)
-NODE_IDS = np.array([[10, 20, 30]])  # shape (1, n_nodes)
-
-# 3 × 2 matrix: (timestamps, lines)
-LINE_LOADING = np.array([[70, 50], [90, 30], [80, 40]])
-P_TO = np.array([[10, -5], [12, -4], [11, -3]])
-P_FROM = np.array([[-9, 4], [-11, 3], [-10, 2]])
-LINE_IDS = np.array([[100, 200]])
-
-# Compose an output-dict that uses the same ComponentType keys
-OUTPUT = {
-    ComponentType.node: {"u_pu": NODE_U_PU, "id": NODE_IDS},
-    ComponentType.line: {
-        "loading": LINE_LOADING,
-        "p_to": P_TO,
-        "p_from": P_FROM,
-        "id": LINE_IDS,
-    },
-}
+MODEL_DATA = "data/test_data/input/input_network_data.json"
+ACTIVE_DATA_PATH = "data/test_data/input/active_power_profile.parquet"
+REACTIVE_DATA_PATH = "data/test_data/input/reactive_power_profile.parquet"
+WRONG_TMESTAMP_PATH = "data/test_data/input/active_power_profile_wrong_datetime.parquet"
+WRONG_IDS_PATH = "data/test_data/input/active_power_profile_wrong_ids.parquet"
+DIFFERENT_SHAPE_PATH = "data/test_data/input/active_power_profile_different_shape.parquet"
 
 
-# ─────────────────────────────────────────────────────────────────────
-#  node_voltage_summary
-# ─────────────────────────────────────────────────────────────────────
-def test_node_voltage_summary_basic():
-    df = node_voltage_summary(OUTPUT, TIMESTAMPS)
-
-    # shape and columns
-    assert df.shape == (3, 4)
-    assert list(df.columns) == [
-        "Max_Voltage",
-        "Max_Voltage_Node",
-        "Min_Voltage",
-        "Min_Voltage_Node",
-    ]
-
-    # check a couple of specific values
-    assert df.loc[TIMESTAMPS[0], "Max_Voltage"] == 1.05
-    assert df.loc[TIMESTAMPS[2], "Min_Voltage_Node"] == 20
+CORRECT_ROW_PER_LINE_PATH = "data/test_data/expected_output/output_table_row_per_line.parquet"
+CORRECT_ROW_PER_TIMESTAMP_PATH = "data/test_data/expected_output/output_table_row_per_timestamp.parquet"
 
 
-# ─────────────────────────────────────────────────────────────────────
-#  line_statistics_summary
-# ─────────────────────────────────────────────────────────────────────
-def test_line_statistics_summary_basic():
-    df = line_statistics_summary(OUTPUT, TIMESTAMPS)
-
-    # expected index and columns
-    assert list(df.index) == [100, 200]
-    assert set(df.columns) == {
-        "Total_Loss",
-        "Max_Loading",
-        "Max_Loading_Timestamp",
-        "Min_Loading",
-        "Min_Loading_Timestamp",
-    }
-
-    # total loss should be positive and identical for both dummy lines here
-    assert np.allclose(df["Total_Loss"], df["Total_Loss"][0])
-    assert df["Total_Loss"][0] > 0
-
-    # max / min loading sanity
-    assert df["Max_Loading"][100] == 90
-    assert df["Min_Loading"][200] == 30
+def test_load_input_data():
+    """
+    Test the load_input_data function for correct loading and validation of input data.
+    This test checks that the active and reactive dataframes have the same shape, index, and columns.
+    """
+    active_df, reactive_df,_ = load_input_data(ACTIVE_DATA_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
+    assert active_df.shape == reactive_df.shape, "Active and reactive data must have the same shape."
+    assert active_df.index.equals(reactive_df.index), "Active and reactive data must share the same index."
+    assert active_df.columns.equals(reactive_df.columns), "Active and reactive data must share the same column IDs."
 
 
-# ─────────────────────────────────────────────────────────────────────
-#  data_processing wrapper
-# ─────────────────────────────────────────────────────────────────────
-def test_data_processing_combines_helpers():
-    node_df, line_df = data_processing(OUTPUT, TIMESTAMPS)
+def test_load_input_data_wrong_timestamp():
+    """
+    Test that the load_input_data function raises a TimestampMismatchError
+    when the active and reactive dataframes have different timestamps.
+    """
+    with pytest.raises(TimestampMismatchError):
+        load_input_data(WRONG_TMESTAMP_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
 
-    # wrapper must delegate to helpers faithfully
-    expected_node = node_voltage_summary(OUTPUT, TIMESTAMPS)
-    expected_line = line_statistics_summary(OUTPUT, TIMESTAMPS)
 
-    pd.testing.assert_frame_equal(node_df, expected_node)
-    pd.testing.assert_frame_equal(line_df, expected_line)
+def test_load_input_data_wrong_ids():
+    """
+    Test that the load_input_data function raises an IDsDoNotMatchError
+    when the active and reactive dataframes have different column IDs.
+    """
+    with pytest.raises(IDsDoNotMatchError):
+        load_input_data(WRONG_IDS_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
+
+
+def test_load_input_data_different_shape():
+    """
+    Test that the load_input_data function raises a ValidationException
+    when the active and reactive dataframes have different shapes.
+    """
+    with pytest.raises(ValidationException):
+        load_input_data(DIFFERENT_SHAPE_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
+
+
+def test_load_input_data_invalid_file():
+    """
+    Test that the load_input_data function raises a FileNotFoundError
+    when the provided file paths are invalid.
+    """
+    with pytest.raises(FileNotFoundError):
+        load_input_data("invalid_path.parquet", REACTIVE_DATA_PATH, MODEL_DATA)
+
+    with pytest.raises(FileNotFoundError):
+        load_input_data(ACTIVE_DATA_PATH, "invalid_path.parquet", MODEL_DATA)
+
+    with pytest.raises(FileNotFoundError):
+        load_input_data(ACTIVE_DATA_PATH, REACTIVE_DATA_PATH, "invalid_model.json")
+
+
+def test_node_voltage_summary():
+    """
+    Test the node_voltage_summary function to ensure it returns the correct summary DataFrame.
+    This test checks that the output matches the expected DataFrame for each timestamp.
+    """
+    active_df, reactive_df, dataset = load_input_data(ACTIVE_DATA_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
+    output = run_updated_power_flow_analysis(active_df, reactive_df, dataset)
+    node_summary_correct_row_per_timestamp = pd.read_parquet(CORRECT_ROW_PER_TIMESTAMP_PATH, engine="pyarrow")
+
+    assert node_voltage_summary(output, active_df.index).equals(node_summary_correct_row_per_timestamp)
+
+
+def test_line_voltage_summary():
+    """
+    Test the line_statistics_summary function to ensure it returns the correct summary DataFrame.
+    This test checks that the output matches the expected DataFrame for each line.
+    """
+    active_df, reactive_df, dataset = load_input_data(ACTIVE_DATA_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
+    output = run_updated_power_flow_analysis(active_df, reactive_df, dataset)
+    line_summary_correct_row_per_line = pd.read_parquet(CORRECT_ROW_PER_LINE_PATH, engine="pyarrow")
+
+    assert (
+        line_statistics_summary(output, active_df.index).round(14).equals(line_summary_correct_row_per_line.round(14))
+    )
+
+
+# Add this test to test_assignment2.py
+
+
+def test_data_processing():
+    """
+    Test the data_processing function to ensure it processes the
+      input data correctly and returns the expected DataFrames.
+    """
+
+    line_summary_correct_row_per_line = pd.read_parquet(CORRECT_ROW_PER_LINE_PATH, engine="pyarrow")
+    node_summary_correct_row_per_timestamp = pd.read_parquet(CORRECT_ROW_PER_TIMESTAMP_PATH, engine="pyarrow")
+
+    node_df, line_df = data_processing(ACTIVE_DATA_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
+
+    assert node_df.equals(node_summary_correct_row_per_timestamp)
+
+    assert line_df.round(14).equals(line_summary_correct_row_per_line.round(14))
