@@ -4,10 +4,12 @@ import random
 
 import numpy as np
 import pandas as pd
-from assignment1 import GraphProcessor as gp
 from power_grid_model import CalculationMethod, CalculationType, PowerGridModel, initialize_array
 from power_grid_model.utils import json_deserialize
 from power_grid_model.validation import assert_valid_batch_data
+
+from .assignment1 import GraphProcessor as gp
+from .assignment2 import line_statistics_summary, node_voltage_summary
 
 
 def ev_penetration(
@@ -18,8 +20,6 @@ def ev_penetration(
     percentage: float,
     seed: int,
 ) -> tuple:
-
-    print(input_network_data)
 
     with open(meta_data_str, "r", encoding="utf-8") as fp_open:
         input_metadata = json.load(fp_open)
@@ -40,7 +40,7 @@ def ev_penetration(
     )
     source_id = input_data["node"][0][0]  # or meta_data
 
-    edge_ids = np.concatenate([edge_ids_init, np.array(input_data["transformer"]["id"])])
+    edge_ids = np.concatenate([edge_ids_init, np.array(input_data["transformer"]["id"])]).tolist()
     edge_vertex_id_pairs = edge_vertex_id_pairs_init + [(source_id, input_metadata["lv_busbar"])]
     edge_enabled = np.append(edge_enabled_init, True)
 
@@ -54,89 +54,67 @@ def ev_penetration(
 
     random.seed(seed)
 
-    no_feeders = len(input_metadata.get("lv_feeders", []))
+    number_feeders = len(input_metadata.get("lv_feeders", []))
     no_house = len(input_data["sym_load"])
-    ev_feeder = math.floor((percentage / 100) * no_house / no_feeders)
+
+    ev_feeder = math.floor((percentage / 100) * no_house / number_feeders)
 
     feeder_to_loads = {feeder: [] for feeder in input_metadata["lv_feeders"]}
+
     selected_ids = []
+
+    # Iterate thrugh the network to find downstream vertices for each feeder, chekc what houses =(sym_load)
+    # are  connected through which feeder
 
     for feeder in input_metadata["lv_feeders"]:
         downstream_vertices = grid.find_downstream_vertices(feeder)
+
         matched_loads = [load["id"] for load in input_data["sym_load"] if load["node"] in downstream_vertices]
+
         if matched_loads:
+            # Randomly select a household that has EV charger, and making sure that
+            # we do not select more than ev_feeder households for each feeder
             selected_ids_for_feeder = random.sample(matched_loads, min(ev_feeder, len(matched_loads)))
+
             feeder_to_loads[feeder].extend(selected_ids_for_feeder)
+
             selected_ids.extend(selected_ids_for_feeder)
 
+    # Select the houses with EV chargers (the sym_loads) from main data
     filtered_profile = active_power_profile.loc[:, selected_ids]
+
+    # Number of selected houses with EV chargers
     num_selected = len(selected_ids)
+
+    # Randomly select the profil of the EV charger
     selected_columns = random.sample(ev_power_profile.columns.tolist(), num_selected)
+
+    # Get the column of the slecetd EV charger profiles
     selected_ev_profile = ev_power_profile[selected_columns]
 
+    # Fix the ids of the slected profiles to be equal to the ids of the slected houses(sym_loads)
     selected_ev_profile.index = filtered_profile.index
+    # Same but with column names
     selected_ev_profile.columns = filtered_profile.columns
 
+    # add the change thta the EV charger will cause on the sym_loads
     summed_profile = filtered_profile.add(selected_ev_profile, fill_value=0)
 
+    # Create the update array for the sym_loads
     update_sym_load = initialize_array("update", "sym_load", summed_profile.shape)
     update_sym_load["id"] = summed_profile.columns.to_numpy()
     update_sym_load["p_specified"] = summed_profile.to_numpy()
 
     update_data = {"sym_load": update_sym_load}
     assert_valid_batch_data(input_data=input_data, update_data=update_data, calculation_type=CalculationType.power_flow)
-
+    # calculate the updated power flow
     model_2 = model.copy()
     model_2.update(update_data=update_data)
 
     output_data = model_2.calculate_power_flow(
         update_data=update_data, calculation_method=CalculationMethod.newton_raphson
     )
-
-    node_voltages = output_data["node"]["u_pu"]
-    node_ids = output_data["node"]["id"]
-    line_loadings = output_data["line"]["loading"]
-    line_ids = output_data["line"]["id"]
-    p_from = output_data["line"]["p_from"]
-    p_to = output_data["line"]["p_to"]
-    timestamps = active_power_profile.index
-
-    max_voltage = np.max(node_voltages, axis=1)
-    min_voltage = np.min(node_voltages, axis=1)
-    max_voltage_node = node_ids[np.arange(len(node_voltages)), np.argmax(node_voltages, axis=1)]
-    min_voltage_node = node_ids[np.arange(len(node_voltages)), np.argmin(node_voltages, axis=1)]
-
-    voltage_df = pd.DataFrame(
-        {
-            "Timestamp": timestamps,
-            "Max_Voltage": max_voltage,
-            "Max_Voltage_Node": max_voltage_node,
-            "Min_Voltage": min_voltage,
-            "Min_Voltage_Node": min_voltage_node,
-        }
-    ).set_index("Timestamp")
-
-    line_results = []
-    for i, line_id in enumerate(np.unique(line_ids)):
-        mask = line_ids == line_id
-        loadings = line_loadings[mask]
-        max_loading = loadings.max()
-        min_loading = loadings.min()
-        max_loading_time = timestamps[np.argmax(loadings)]
-        min_loading_time = timestamps[np.argmin(loadings)]
-        energy_losses = abs(p_from[:, i] + p_to[:, i])
-        energy_loss_kwh = np.trapz(energy_losses) / 1000
-
-        line_results.append(
-            {
-                "Line_ID": line_id,
-                "Total_Loss": energy_loss_kwh,
-                "Max_Loading": max_loading,
-                "Max_Loading_Timestamp": max_loading_time,
-                "Min_Loading": min_loading,
-                "Min_Loading_Timestamp": min_loading_time,
-            }
-        )
-
-    line_df = pd.DataFrame(line_results).set_index("Line_ID")
+    # Use the developed functions to summarize the results
+    voltage_df = node_voltage_summary(output_data, active_power_profile.index)
+    line_df = line_statistics_summary(output_data, active_power_profile.index)
     return voltage_df, line_df

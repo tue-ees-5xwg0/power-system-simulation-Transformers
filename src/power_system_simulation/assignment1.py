@@ -32,8 +32,10 @@ class GraphCycleError(Exception):
 class EdgeAlreadyDisabledError(Exception):
     """Raised when an edge is already disabled"""
 
+
 class GraphProcessor:
     """A class for processing undirected graphs"""
+
     def __init__(
         self,
         vertex_ids: List[int],
