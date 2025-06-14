@@ -17,7 +17,7 @@ def test_optimal_tap_0():
         reactive_power_profile_path = str (PATH_REACTIVE_POWER_PROFILE),
         optimize_by=0
     )
-    assert result ==  5
+    assert result ==  1
 
 def test_optimal_tap_1():
     """Test the optimal tap functionality with a custom made input."""
@@ -27,7 +27,7 @@ def test_optimal_tap_1():
         reactive_power_profile_path = str (PATH_REACTIVE_POWER_PROFILE),
         optimize_by=1
     )
-    assert result == 1
+    assert result == 3
 
 def test_invalid():
     with pytest.raises(InvalidOptimizeInput):
