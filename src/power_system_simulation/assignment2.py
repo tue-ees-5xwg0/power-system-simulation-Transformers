@@ -114,7 +114,7 @@ def line_statistics_summary(output: dict, timestamps: pd.Index) -> pd.DataFrame:
     p_from = output[ComponentType.line]["p_from"].T
 
     loss_energy = np.abs(p_to + p_from)
-    total_loss = np.trapz(loss_energy, axis=1) / 1000  # kWh if p in kW
+    total_loss = np.trapezoid(loss_energy, axis=1) / 1000  # kWh if p in kW
 
     max_load = np.max(load, axis=1)
     min_load = np.min(load, axis=1)

@@ -15,9 +15,6 @@ This script defines a validation class with the following exceptions
 - **TransformerAndFeedersNotConnected** (Feeders and transformers are not connected to the same graph)
 - **TooFewEVs** (there are less EVs profiles than symloads)
 
-Authors: Rick Eversdijk, Luka Nielsen, Carmelo Vella, David van Warmerdam, Codrin Dănculea
-Date: 10/06/2024
-
 """
 
 # Load dependencies and functions from graph_processing

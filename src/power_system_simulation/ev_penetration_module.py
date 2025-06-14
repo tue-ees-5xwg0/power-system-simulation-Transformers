@@ -8,8 +8,8 @@ from power_grid_model import CalculationMethod, CalculationType, PowerGridModel,
 from power_grid_model.utils import json_deserialize
 from power_grid_model.validation import assert_valid_batch_data
 
-from .assignment1 import GraphProcessor as gp
-from .assignment2 import line_statistics_summary, node_voltage_summary
+from power_system_simulation.assignment1 import GraphProcessor as gp
+from power_system_simulation.assignment2 import line_statistics_summary, node_voltage_summary
 
 
 def ev_penetration(
@@ -118,3 +118,5 @@ def ev_penetration(
     voltage_df = node_voltage_summary(output_data, active_power_profile.index)
     line_df = line_statistics_summary(output_data, active_power_profile.index)
     return voltage_df, line_df
+
+#test open source 

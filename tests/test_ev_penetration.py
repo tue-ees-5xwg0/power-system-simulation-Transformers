@@ -34,6 +34,10 @@ def test_ev_penetration():
     assert isinstance(result[0], pd.DataFrame), "First element should be a DataFrame."
     assert isinstance(result[1], pd.DataFrame), "Second element should be a DataFrame."
 
+    voltage_df = voltage_df.sort_index().sort_index(axis=1)
+    voltage_df_correct = voltage_df_correct.sort_index().sort_index(axis=1)
+    line_df = line_df.sort_index().sort_index(axis=1)
+    line_df_correct = line_df_correct.sort_index().sort_index(axis=1)
+
     assert voltage_df.round(10).compare(voltage_df_correct.round(10)).empty, "Voltage DataFrame does not match expected values."
     assert line_df.round(10).compare(line_df_correct.round(10)).empty, "Line DataFrame does not match expected values."
-    

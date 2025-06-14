@@ -102,24 +102,28 @@ class GraphProcessor:
         if not self.edge_enabled[index]:
             return []
 
-        # We get the vertices of the edge and we temporarily remove the edge
+        # We get the vertices connected to this edge 
         vertex1, vertex2 = self.edge_vertex_id_pairs[index]
-        self._graph.remove_edge(vertex1, vertex2)
+
+        #create a copy of the graph in order to remove the edge
+        graph_Copy = self._graph.copy()
+        graph_Copy.remove_edge(vertex1,vertex2)
 
         # Find all the connections after the removal
-        connected = list(nx.connected_components(self._graph))
-
-        # Returning to the original graph state
-        self._graph.add_edge(vertex1, vertex2)
-
+        connected = list(nx.connected_components(graph_Copy))
+        
         # Find the component that contains the source vertex
-        source = next(comp for comp in connected if self.source_vertex_id in comp)
-
-        # Find the nodes that do not contain the source vertex
-        for comp in connected:
-            if comp != source:
-                return list(comp)
-
+        for component in connected:
+            if self.source_vertex_id in component:
+                sourceComponent = component
+                break
+        
+        # Return the nodes from the component that does not contain the source
+        for component in connected:
+            if component != sourceComponent:
+                return list(component)
+            
+    # If both vertices still belong to the same component, return empty list
         return []
 
     def find_alternative_edges(self, disabled_edge_id: int) -> List[int]:

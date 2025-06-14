@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from power_grid_model.utils import json_deserialize, json_serialize_to_file
 
-from . import assignment2 as calc
+from power_system_simulation import assignment2 as calc
 
 
 class InvalidOptimizeInput(Exception):
@@ -46,11 +46,11 @@ def optimal_tap_position(
     total_losses_min_tap_pos = pos_max
     average_dev_min_tap_pos = pos_max
 
-    for tap_pos in range(pos_max, pos_min - 1, -1):
+    for tap_pos in range(pos_min, pos_max - 1, -1):
         input_data["transformer"]["tap_pos"] = tap_pos
         json_serialize_to_file(input_network_data_alt, input_data)
 
-        voltage_results, line_results = calc.calculate_power_grid(
+        voltage_results, line_results = calc.run_updated_power_flow_analysis(
             input_network_data_alt, active_power_profile_path, reactive_power_profile_path
         )
 
