@@ -6,6 +6,7 @@ from power_grid_model.utils import json_deserialize, json_serialize_to_file
 from power_system_simulation import assignment2 as calc
 
 
+
 class InvalidOptimizeInput(Exception):
     """Exception raised when user inputs an invalid optimize_by value."""
 
@@ -33,36 +34,67 @@ def optimal_tap_position(
     if optimize_by not in (0, 1):
         raise InvalidOptimizeInput("Option to optimize by is invalid, please only input 0 or 1.")
 
-    with open(input_network_data, "r", encoding="utf-8") as fp:
-        input_data = json_deserialize(fp.read())
+    # with open(input_network_data, "r", encoding="utf-8") as fp:
+    #     input_data = json_deserialize(fp.read())
 
-    input_network_data_alt = Path(input_network_data).parent / "input_network_data_alt.json"
+    #load input data 
+    active_power_df, reactive_power_df, input_network_data_dict = calc.load_input_data(active_power_profile_path, reactive_power_profile_path, input_network_data)   
 
-    pos_min = input_data["transformer"]["tap_min"][0]
-    pos_max = input_data["transformer"]["tap_max"][0]
+    path_input_network_data_temp = Path(input_network_data).parent / "input_network_data_temp.json"
+
+    pos_min = input_network_data_dict["transformer"]["tap_min"][0]
+    pos_max = input_network_data_dict["transformer"]["tap_max"][0]
 
     total_losses_min = float("inf")
     average_dev_max_node_min = float("inf")
     total_losses_min_tap_pos = pos_max
     average_dev_min_tap_pos = pos_max
 
-    for tap_pos in range(pos_min, pos_max - 1, -1):
-        input_data["transformer"]["tap_pos"] = tap_pos
-        json_serialize_to_file(input_network_data_alt, input_data)
+    for tap_pos in range(pos_max, pos_min + 1):
+        input_network_data_dict["transformer"]["tap_pos"] = tap_pos
+        json_serialize_to_file(path_input_network_data_temp, input_network_data_dict)
 
-        voltage_results, line_results = calc.run_updated_power_flow_analysis(
-            input_network_data_alt, active_power_profile_path, reactive_power_profile_path
+        result_power_flow_analysis = calc.run_updated_power_flow_analysis(
+             active_power_df, reactive_power_df, input_network_data_dict
         )
+        voltage_summary =calc.node_voltage_summary(result_power_flow_analysis, reactive_power_df.index)
+        losses_summary = calc.line_statistics_summary(result_power_flow_analysis, reactive_power_df.index)
+        
+        average_dev_max_node = (voltage_summary["Max_Voltage_Node"] - 1).abs().mean()
+        # total_losses = losses_summary["Total_Loss"].sum()
 
-        average_dev_max_node = (voltage_results["Max_Voltage_Node"] - 1).abs().mean()
-        total_losses = line_results["Total_Loss"].sum()
-
-        if total_losses < total_losses_min:
+        if tap_pos == pos_max:
+            total_losses = losses_summary["Total_Loss"].sum()
             total_losses_min = total_losses
             total_losses_min_tap_pos = tap_pos
-
-        if average_dev_max_node < average_dev_max_node_min:
             average_dev_max_node_min = average_dev_max_node
             average_dev_min_tap_pos = tap_pos
+        else:
 
-    return total_losses_min_tap_pos if optimize_by == 0 else average_dev_min_tap_pos
+            if total_losses < total_losses_min:
+                total_losses_min = total_losses
+                total_losses_min_tap_pos = tap_pos
+
+            if average_dev_max_node < average_dev_max_node_min:
+                average_dev_max_node_min = average_dev_max_node
+                average_dev_min_tap_pos = tap_pos
+
+    if optimize_by == 0:
+        return total_losses_min_tap_pos   
+
+    if optimize_by == 1:
+        return average_dev_min_tap_pos
+    
+    return 
+
+# from pathlib import Path
+
+# ROOT = Path(__file__).resolve().parents[2]
+# DATA_DIR = ROOT / "tests" / "stefan_data"
+
+# input_network_data = DATA_DIR / "input_network_data.json"
+# active_power_profile_path = DATA_DIR / "active_power_profile.parquet"
+# reactive_power_profile_path = DATA_DIR / "reactive_power_profile.parquet"
+
+# optimal_tap_position(input_network_data , active_power_profile_path,reactive_power_profile_path,0)
+
