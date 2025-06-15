@@ -5,6 +5,8 @@ This is the graph processing assignment.
 
 from typing import List, Tuple
 
+import matplotlib.pyplot as plt
+
 # import matplotlib.pyplot as plt
 import networkx as nx
 
@@ -102,28 +104,28 @@ class GraphProcessor:
         if not self.edge_enabled[index]:
             return []
 
-        # We get the vertices connected to this edge 
+        # We get the vertices connected to this edge
         vertex1, vertex2 = self.edge_vertex_id_pairs[index]
 
-        #create a copy of the graph in order to remove the edge
+        # create a copy of the graph in order to remove the edge
         graph_Copy = self._graph.copy()
-        graph_Copy.remove_edge(vertex1,vertex2)
+        graph_Copy.remove_edge(vertex1, vertex2)
 
         # Find all the connections after the removal
         connected = list(nx.connected_components(graph_Copy))
-        
+
         # Find the component that contains the source vertex
         for component in connected:
             if self.source_vertex_id in component:
                 sourceComponent = component
                 break
-        
+
         # Return the nodes from the component that does not contain the source
         for component in connected:
             if component != sourceComponent:
                 return list(component)
-            
-    # If both vertices still belong to the same component, return empty list
+
+        # If both vertices still belong to the same component, return empty list
         return []
 
     def find_alternative_edges(self, disabled_edge_id: int) -> List[int]:
@@ -171,3 +173,51 @@ class GraphProcessor:
                     alt_list.append(test_edge_id)
 
         return alt_list
+
+        # ───────────────────────────
+
+    # Visualization helper
+    # ───────────────────────────
+    def get_figure(self, *, seed: int = 42, figsize: tuple = (6, 4)):
+        """
+        Draw the graph.
+
+        • Enabled lines  → solid grey
+        • Disabled lines → dashed red
+        • Edge-ID labels for all lines
+        """
+        pos = nx.spring_layout(self._graph, seed=seed)
+        fig, ax = plt.subplots(figsize=figsize)
+
+        # ── nodes ──────────────────────────────────────────────
+        nx.draw_networkx_nodes(self._graph, pos, node_color="lightsteelblue", node_size=600, ax=ax)
+        nx.draw_networkx_labels(self._graph, pos, font_size=12, font_weight="bold", ax=ax)
+
+        # ── enabled edges + labels ─────────────────────────────
+        nx.draw_networkx_edges(self._graph, pos, width=2, edge_color="gray", ax=ax)
+        nx.draw_networkx_edge_labels(
+            self._graph, pos, edge_labels=nx.get_edge_attributes(self._graph, "id"), font_size=9, ax=ax
+        )
+
+        # ── disabled edges + labels ────────────────────────────
+        disabled_triplets = [
+            (u, v, k)  #  u-node, v-node, edge-id
+            for (u, v), en, k in zip(self.edge_vertex_id_pairs, self.edge_enabled, self.edge_ids)
+            if not en
+        ]
+        if disabled_triplets:
+            G_off = nx.Graph()
+            for u, v, k in disabled_triplets:
+                G_off.add_edge(u, v, id=k)
+
+            # dashed red edges
+            nx.draw_networkx_edges(G_off, pos, style="dashed", edge_color="red", width=1.5, ax=ax)
+
+            # red ID labels on those edges
+            off_labels = {(u, v): k for u, v, k in disabled_triplets}
+            nx.draw_networkx_edge_labels(G_off, pos, edge_labels=off_labels, font_size=9, font_color="red", ax=ax)
+
+        ax.set_axis_off()
+        fig.tight_layout()
+        plt.show()
+        return fig

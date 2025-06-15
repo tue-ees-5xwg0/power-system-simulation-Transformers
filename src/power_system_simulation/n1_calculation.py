@@ -5,11 +5,14 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
-from power_system_simulation.assignment1 import GraphProcessor as gp
-from power_grid_model import CalculationMethod, CalculationType, PowerGridModel, initialize_array
+from pandas.testing import assert_frame_equal
+from power_grid_model import CalculationMethod, CalculationType, ComponentType, PowerGridModel, initialize_array
 from power_grid_model.utils import json_deserialize
 from power_grid_model.validation import assert_valid_input_data
 from prettytable import PrettyTable
+
+from power_system_simulation import assignment2 as calc
+from power_system_simulation.assignment1 import GraphProcessor as gp
 
 
 class IDNotFoundError(Exception):
@@ -18,23 +21,14 @@ class IDNotFoundError(Exception):
     pass
 
 
+class IDNotInt(Exception):
+    """The ID is not an int"""
+
+
 class LineIDNotConnectedOnBothSides(Exception):
     """The inserted line ID is not connected at both sides."""
 
     pass
-
-
-class Timer:
-    def __init__(self, name: str):
-        self.name = name
-        self.start = None
-
-    def __enter__(self):
-        self.start = time.perf_counter()
-
-    def __exit__(self, *args):
-        elapsed = time.perf_counter() - self.start
-        print(f"Execution time for {self.name} is {elapsed:.6f} s")
 
 
 def nm_function(
@@ -44,29 +38,32 @@ def nm_function(
     active_power_profile_path: str,
     reactive_power_profile_path: str,
 ) -> list[int]:
+    # read input data
+    active_power, reactive_power, input_data = calc.load_input_data(
+        active_data_path=active_power_profile_path,
+        reactive_data_path=reactive_power_profile_path,
+        model_data_path=input_data_path,
+    )
 
-    with open(metadata_path, "r", encoding="utf-8") as fp:
+    with open(metadata_path, encoding="utf-8") as fp:
         meta_data = json.load(fp)
 
-    with open(input_data_path, "r", encoding="utf-8") as fp:
-        input_data = json_deserialize(fp.read())
+    vertex_ids = input_data[ComponentType.node]["id"].tolist()
 
-    assert_valid_input_data(input_data=input_data, calculation_type=CalculationType.power_flow)
-
-    active_power_profile = pd.read_parquet(active_power_profile_path)
-    reactive_power_profile = pd.read_parquet(reactive_power_profile_path)
-
-    vertex_ids = input_data["node"]["id"]
-    edge_ids_init = np.array(input_data["line"]["id"])
-    edge_vertex_id_pairs_init = list(zip(input_data["line"]["from_node"], input_data["line"]["to_node"]))
-    edge_enabled_init = (np.array(input_data["line"]["from_status"]) == 1) & (
-        np.array(input_data["line"]["to_status"]) == 1
+    edge_ids_init = input_data[ComponentType.line]["id"].tolist()
+    edge_vertex_id_pairs_init = list(
+        zip(input_data[ComponentType.line]["from_node"], input_data[ComponentType.line]["to_node"])
     )
-    source_id = input_data["node"][0][0]
 
-    edge_ids = np.concatenate([edge_ids_init, np.array(input_data["transformer"]["id"])])
+    edge_enabled_init = (np.array(input_data[ComponentType.line]["from_status"]) == 1) & (
+        np.array(input_data[ComponentType.line]["to_status"]) == 1
+    ).tolist()
+    source_id = input_data[ComponentType.node][0][0].item()
+
+    edge_ids = np.concatenate([edge_ids_init, np.array(input_data[ComponentType.transformer]["id"])]).tolist()
     edge_vertex_id_pairs = edge_vertex_id_pairs_init + [(source_id, meta_data["lv_busbar"])]
-    edge_enabled = np.append(edge_enabled_init, True)
+
+    edge_enabled = (np.append(edge_enabled_init, True)).tolist()
 
     gra = gp(
         vertex_ids=vertex_ids,
@@ -77,18 +74,22 @@ def nm_function(
     )
 
     if not isinstance(given_lineid, int):
-        raise IDNotFoundError("The inserted line ID is not valid")
+        raise IDNotInt("The inserted line ID is not valid")
+
+    if given_lineid not in input_data["line"]["id"]:
+        raise IDNotFoundError("The ID is not in the data!")
 
     from_status = input_data["line"]["from_status"][input_data["line"]["id"] == given_lineid]
     to_status = input_data["line"]["to_status"][input_data["line"]["id"] == given_lineid]
-    if int(from_status) == 0 or int(to_status) == 0:
+
+    if from_status == 0 or to_status == 0:
         raise LineIDNotConnectedOnBothSides("The inserted line ID is not connected at both sides")
 
     alt_list = gra.find_alternative_edges(given_lineid)
 
-    table = PrettyTable(["Alternative ID", "Max Loading", "ID_max", "Timestamp_max"])
+    rows = []
 
-    date_list = [datetime(2024, 1, 1) + timedelta(minutes=i * 15) for i in range(active_power_profile.shape[0])]
+    date_list = [datetime(2024, 1, 1) + timedelta(minutes=i * 15) for i in range(active_power.shape[0])]
 
     for alt_id in alt_list:
         new_data = copy.deepcopy(input_data)
@@ -97,30 +98,25 @@ def nm_function(
         new_data["line"]["to_status"][new_data["line"]["id"] == given_lineid] = 0
         new_data["line"]["from_status"][new_data["line"]["id"] == given_lineid] = 0
 
-        model = PowerGridModel(input_data=new_data)
-
-        load_profile = initialize_array("update", "sym_load", active_power_profile.shape)
-        load_profile["id"] = active_power_profile.columns.to_numpy()
-        load_profile["p_specified"] = active_power_profile.to_numpy()
-        load_profile["q_specified"] = reactive_power_profile.to_numpy()
-
-        update_data = {"sym_load": load_profile}
-
-        with Timer("Batch Calculation using the linear method"):
-            output_data = model.calculate_power_flow(
-                update_data=update_data, calculation_method=CalculationMethod.linear
-            )
+        output_data = calc.run_updated_power_flow_analysis(active_power, reactive_power, new_data)
 
         line_loading = output_data["line"]["loading"]
+        # Get position in the array
         max_idx = np.argmax(line_loading)
-        max_line_load = line_loading[max_idx]
-        max_line_load_id = output_data["line"]["id"][max_idx]
-        timestamp_max = date_list[max_idx % len(date_list)]
+        row, col = np.unravel_index(max_idx, line_loading.shape)
 
-        table.add_row([alt_id, max_line_load, max_line_load_id, timestamp_max])
+        # Get max value and its id and the timestamp
 
-        del new_data, output_data, model
+        max_line_load = line_loading[row, col]
 
-        print(table)
+        max_line_load_id = output_data["line"]["id"][row, col]
 
-    return alt_list
+        # The given line  repeats each timestamp so i have to
+        # find whihc row(which timestamp) corresponds to this one
+
+        timestamp_max = date_list[row]
+
+        rows.append([alt_id, max_line_load, max_line_load_id, timestamp_max])
+
+    retun_df = pd.DataFrame(rows, columns=["Alternative ID", "Max Loading", "ID_max", "Timestamp_max"])
+    return retun_df

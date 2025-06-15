@@ -4,6 +4,7 @@ import random
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal
 from power_grid_model import CalculationMethod, CalculationType, PowerGridModel, initialize_array
 from power_grid_model.utils import json_deserialize
 from power_grid_model.validation import assert_valid_batch_data
@@ -119,4 +120,73 @@ def ev_penetration(
     line_df = line_statistics_summary(output_data, active_power_profile.index)
     return voltage_df, line_df
 
-#test open source 
+
+# PATH_INPUT_NETWORK_DATA = "data/test_data/input_EV_penetration/input_network_data.json"
+# PATH_META_DATA = "data/test_data/input_EV_penetration/meta_data.json"
+# PATH_ACTIVE_POWER_PROFILE = "data/test_data/input_EV_penetration/active_power_profile.parquet"
+# PATH_EV_ACTIVE_POWER_PROFILE = "data/test_data/input_EV_penetration/ev_active_power_profile.parquet"
+
+
+# PATH_EXPECTED_LINE_DF = "data/test_data/output_EV_penetration/EV_penetration_line_df.json"
+# PATH_EXPECTED_VOLTAGE_DF = "data/test_data/output_EV_penetration/EV_penetration_voltage_df.json"
+
+# Run the ev_penetration function with the provided paths and a sample percentage and seed
+# voltage_df, line_df = ev_penetration(
+#     PATH_INPUT_NETWORK_DATA,
+#     PATH_META_DATA,
+#     PATH_ACTIVE_POWER_PROFILE,
+#     PATH_EV_ACTIVE_POWER_PROFILE,
+#     percentage=60,  # example percentage
+#     seed=42         # example seed
+# )
+
+# # ---------- write ----------
+# line_df.to_json(
+#     PATH_EXPECTED_LINE_DF,
+#     orient="split",
+#     date_format="iso",      # keep them as "YYYY-MM-DDTHH:MM:SS"
+#     indent=2
+# )
+
+# # ---------- read ----------
+# # line_df2 = pd.read_json(
+#     PATH_EXPECTED_LINE_DF,
+#     orient="split",
+#     convert_dates=["Max_Loading_Timestamp", "Min_Loading_Timestamp"]   # <── parse this column
+# )
+# print(line_df2)
+# # Read the expected dataframes from the saved JSON files
+# expected_voltage_df = pd.read_json(PATH_EXPECTED_VOLTAGE_DF, orient="split")
+# expected_line_df = pd.read_json(PATH_EXPECTED_LINE_DF, orient="split")
+
+# # Explicitly set the index name after loading (if not preserved)
+# expected_voltage_df.index.name = "Timestamp"
+# expected_line_df.index.name = "Line_ID"
+
+# # Convert index back to datetime for voltage_df (if applicable)
+# try:
+#     voltage_df.index = pd.to_datetime(voltage_df.index)
+#     expected_voltage_df.index = pd.to_datetime(expected_voltage_df.index)
+# except Exception:
+#     pass
+
+
+# # Round both dataframes to 10 decimal points before comparison
+# voltage_df_rounded = voltage_df.round(10)
+# expected_voltage_df_rounded = expected_voltage_df.round(10)
+# line_df_rounded = line_df.round(10)
+# expected_line_df_rounded = expected_line_df.round(10)
+
+
+# print(line_df_rounded)
+# print( "---------------------------------------")
+# print(expected_line_df_rounded)
+
+# # Compare the computed and expected dataframes using the .compare function
+# voltage_comparison = voltage_df_rounded.compare(expected_voltage_df_rounded)
+# line_comparison = line_df_rounded.compare(expected_line_df_rounded)
+
+# print("Voltage DataFrame comparison:")
+# print(voltage_comparison)
+# print("\nLine DataFrame comparison:")
+# print(line_comparison)
