@@ -45,14 +45,9 @@ def test_ev_penetration():
     line_df_correct = line_df_correct.sort_index().sort_index(axis=1)
     line_df_correct.index.name = "Line_ID"
 
+    line_df.index = line_df.index.astype("int64")
+    line_df_correct.index = line_df_correct.index.astype("int64")
+
     assert (voltage_df.round(10).compare(voltage_df_correct.round(10))).empty
     assert (line_df.round(10).compare(line_df_correct.round(10))).empty
 
-#     pd.testing.assert_frame_equal(
-#     line_df,
-#     line_df_correct,
-#     check_exact=False,
-#     rtol=1e-9,
-#     atol=1e-12,
-#     check_dtype=False  
-# )
