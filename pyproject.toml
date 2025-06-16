@@ -54,7 +54,7 @@ target-version = ['py312']
 profile = "black"
 combine_as_imports = true
 line_length = 120
-skip_glob = ["**/*.ipynb"]
+skip = ["*.ipynb"]
 
 [tool.pylint.main]
 # Specify a score threshold under which the program will exit with error.
