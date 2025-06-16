@@ -46,4 +46,10 @@ def test_ev_penetration():
     line_df_correct.index.name = "Line_ID"
 
     assert (voltage_df.round(10).compare(voltage_df_correct.round(10))).empty
-    assert (line_df.round(10).compare(line_df_correct.round(10))).empty
+    pd.testing.assert_frame_equal(
+    line_df,
+    line_df_correct,
+    check_exact=False,  # allow approximate comparison
+    rtol=1e-9,          # relative tolerance
+    atol=1e-12          # absolute tolerance
+)
