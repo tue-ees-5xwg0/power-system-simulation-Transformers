@@ -54,11 +54,7 @@ target-version = ['py312']
 profile = "black"
 combine_as_imports = true
 line_length = 120
-skip = [
-  "assignment2.ipynb",
-  "final_presentation_FINAL_BIG.ipynb",
-  "final_presentation.ipynb"
-]
+skip_glob = ["*.ipynb"]
 
 
 [tool.pylint.main]
