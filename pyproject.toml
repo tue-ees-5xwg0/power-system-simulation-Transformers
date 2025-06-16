@@ -29,7 +29,8 @@ dev = [
   'black[jupyter]',
   'pandas',
   'numpy',
-  'matplotlib'
+  'matplotlib',
+  'pyarrow'
 ]
 
 # add more dependencies for running the examples
