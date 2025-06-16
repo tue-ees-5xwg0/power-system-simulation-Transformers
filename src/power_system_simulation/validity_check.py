@@ -64,6 +64,7 @@ class TimestampsDoNotMatchError(Exception):
 class LoadIdsDoNotMatchError(Exception):
     """Exception raised when Load IDs of active and reactive power profiles do not match."""
 
+
 class ValidatePowerSystemSimulation:
     """Power System Validation Class.
 

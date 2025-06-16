@@ -1,5 +1,5 @@
 # pylint: disable= missing-module-docstring, import-error, no-name-in-module
-""""Test for optimal_tap module"""
+""" "Test for optimal_tap module"""
 from pathlib import Path
 
 import pytest
@@ -36,9 +36,9 @@ def test_optimal_tap_1():
 
 
 def test_invalid():
-    """"Test for invalid input data"""
+    """ "Test for invalid input data"""
     with pytest.raises(InvalidOptimizeInput):
-         optimal_tap_position(
+        optimal_tap_position(
             input_network_data=str(PATH_INPUT_NETWORK_DATA),
             active_power_profile_path=str(PATH_ACTIVE_POWER_PROFILE),
             reactive_power_profile_path=str(PATH_REACTIVE_POWER_PROFILE),

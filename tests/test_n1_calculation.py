@@ -19,27 +19,27 @@ EXPECTED_COLS = ["Alternative ID", "Max Loading", "ID_max", "Timestamp_max"]
 
 
 def test_corect_output():
-    """"Test corect output"""
+    """ "Test corect output"""
     correct_output = pd.read_json(CORRECT_SOL_PATH, orient="records", lines=True)
     test = n1.nm_function(20, INPUT_DATA_PATH, METADATA_PATH, ACTIVE_DATA_PATH, REACTIVE_DATA_PATH)
     assert_frame_equal(correct_output, test, check_dtype=False)
 
 
 def test_with_no_output():
-    """"Test with no output"""
+    """ "Test with no output"""
     test = n1.nm_function(19, INPUT_DATA_PATH, METADATA_PATH, ACTIVE_DATA_PATH, REACTIVE_DATA_PATH)
     assert len(test) == 0
     assert list(test.columns) == EXPECTED_COLS
 
 
 def test_ID_not_found():
-    """"Test ID not found error"""
+    """ "Test ID not found error"""
     with pytest.raises(n1.IDNotFoundError):
         n1.nm_function(1000, INPUT_DATA_PATH, METADATA_PATH, ACTIVE_DATA_PATH, REACTIVE_DATA_PATH)
 
 
 def test_line_not_connected_both_sides():
-    """"Line is not connected on both sides error"""
+    """ "Line is not connected on both sides error"""
     with pytest.raises(n1.LineIDNotConnectedOnBothSides):
         n1.nm_function(24, INPUT_DATA_PATH, METADATA_PATH, ACTIVE_DATA_PATH, REACTIVE_DATA_PATH)
 

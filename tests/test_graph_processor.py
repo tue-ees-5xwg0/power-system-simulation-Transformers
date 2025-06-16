@@ -7,8 +7,8 @@
 
 
 import matplotlib
-from matplotlib.figure import Figure
 import pytest
+from matplotlib.figure import Figure
 
 from power_system_simulation.graph_processor import (
     EdgeAlreadyDisabledError,
@@ -19,6 +19,7 @@ from power_system_simulation.graph_processor import (
     IDNotUniqueError,
     InputLengthDoesNotMatchError,
 )
+
 # ─────────────────────────────────────────────────────────────
 # Create the object that is used for all tests
 # ─────────────────────────────────────────────────────────────

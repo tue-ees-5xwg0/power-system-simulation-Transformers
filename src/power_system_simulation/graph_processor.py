@@ -184,7 +184,6 @@ class GraphProcessor:
 
         return alt_list
 
-
     def get_figure(self, *, seed: int = 42, figsize: tuple = (6, 4)):
         """
         Draw the graph.
