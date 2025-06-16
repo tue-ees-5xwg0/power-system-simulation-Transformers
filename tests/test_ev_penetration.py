@@ -14,7 +14,7 @@ PATH_EXPECTED_VOLTAGE_DF = "data/test_data/output_EV_penetration/EV_penetration_
 
 
 def test_ev_penetration():
-    """Test the ev_penetration function with a sample input."""
+    """Test the ev_penetration function with a sample input. For the last assignment."""
     percentage = 60
     seed = 42
 
