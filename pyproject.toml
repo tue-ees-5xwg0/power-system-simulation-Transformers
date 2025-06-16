@@ -14,16 +14,22 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 
-dependencies = []
+dependencies = [  "power_grid_model"]
+
 version = "0.1"
 
 [project.optional-dependencies]
 dev = [
-  'pytest',
+ 'pytest',
   'black',
   'isort',
   'pylint',
-  'pytest-cov'
+  'pytest-cov',
+  'networkx',
+  'black[jupyter]',
+  'pandas',
+  'numpy',
+  'matplotlib'
 ]
 
 # add more dependencies for running the examples
