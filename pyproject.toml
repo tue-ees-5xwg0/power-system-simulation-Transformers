@@ -13,17 +13,24 @@ classifiers = [
     "License :: OSI Approved :: BSD License"
 ]
 requires-python = ">=3.12"
-# add dependencies of your core package, check the license first!
-dependencies = []
+
+dependencies = [  "power_grid_model"]
+
 version = "0.1"
 
 [project.optional-dependencies]
 dev = [
-  'pytest',
+ 'pytest',
   'black',
   'isort',
   'pylint',
-  'pytest-cov'
+  'pytest-cov',
+  'networkx',
+  'black[jupyter]',
+  'pandas',
+  'numpy',
+  'matplotlib',
+  'pyarrow'
 ]
 
 # add more dependencies for running the examples
@@ -47,11 +54,21 @@ target-version = ['py312']
 profile = "black"
 combine_as_imports = true
 line_length = 120
+skip_glob = ["*.ipynb"]
+
 
 [tool.pylint.main]
 # Specify a score threshold under which the program will exit with error.
 fail-under = 10
 max-line-length = 120
+
+[tool.pylint.DESIGN]
+max-positional-arguments=8
+max-args = 8
+max-locals = 45
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = ["unbalanced-tuple-unpacking" , "inconsistent-return-statements" , "duplicate-code"]
 
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.
