@@ -1,10 +1,21 @@
+"""Electric Vehicle (EV) Penetration Analysis Module.
+
+This module provides functionality to analyze the impact of electric vehicle charging on power distribution networks.
+It simulates the integration of EV chargers into existing power grids and calculates the resulting effects on
+network performance, including voltage profiles and line statistics.
+
+Authors:
+    Andrei Dobre
+    Stefan Porfir
+    Diana Ionica
+"""
+
 import json
 import math
 import random
 
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal
 from power_grid_model import CalculationMethod, CalculationType, PowerGridModel, initialize_array
 from power_grid_model.utils import json_deserialize
 from power_grid_model.validation import assert_valid_batch_data
@@ -21,6 +32,25 @@ def ev_penetration(
     percentage: float,
     seed: int,
 ) -> tuple:
+    """Simulate the impact of electric vehicle (EV) penetration on a power distribution network.
+
+    This function analyzes how adding EV chargers to a percentage of households affects the power grid.
+    It randomly distributes EV chargers across different feeders while maintaining a balanced distribution,
+    and calculates the resulting voltage profiles and line statistics.
+
+    Args:
+        input_network_data (str): Path to the JSON file containing the power grid network data.
+        meta_data_str (str): Path to the JSON file containing metadata about the network structure.
+        active_power_profile_path (str): Path to the parquet file containing the base active power profiles.
+        ev_active_power_profile (str): Path to the parquet file containing EV charging power profiles.
+        percentage (float): Percentage of households to be equipped with EV chargers (0-100).
+        seed (int): Random seed for reproducible EV charger distribution.
+
+    Returns:
+        tuple: A tuple containing two pandas DataFrames:
+            - voltage_df: Summary of node voltages across the network
+            - line_df: Summary of line statistics (power flows, losses, etc.)
+    """
 
     with open(meta_data_str, "r", encoding="utf-8") as fp_open:
         input_metadata = json.load(fp_open)

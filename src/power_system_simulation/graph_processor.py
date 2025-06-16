@@ -1,6 +1,16 @@
-"""
-This is the graph processing assignment.
+"""Graph Processing Module for Power System Analysis.
 
+This module provides a robust implementation for processing and analyzing graph structures
+representing power distribution networks. It offers functionality for:
+- Graph validation and integrity checks
+- Downstream vertex identification
+- Alternative path finding for network reconfiguration
+- Cycle detection and connectivity analysis
+- Visual representation of network topology
+Authors:
+    Andrei Dobre
+    Stefan Porfir
+    Diana Ionica
 """
 
 from typing import List, Tuple
@@ -174,10 +184,7 @@ class GraphProcessor:
 
         return alt_list
 
-        # ───────────────────────────
 
-    # Visualization helper
-    # ───────────────────────────
     def get_figure(self, *, seed: int = 42, figsize: tuple = (6, 4)):
         """
         Draw the graph.

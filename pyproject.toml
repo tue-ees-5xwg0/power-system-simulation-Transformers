@@ -14,7 +14,14 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 # add dependencies of your core package, check the license first!
-dependencies = []
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "networkx",
+    "pyarrow",
+    "power_grid_model"
+]
 version = "0.1"
 
 [project.optional-dependencies]
@@ -56,10 +63,10 @@ max-line-length = 120
 [tool.pylint.DESIGN]
 max-positional-arguments=8
 max-args = 8
-max-locals = 35
+max-locals = 45
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = ["unbalanced-tuple-unpacking"]
+disable = ["unbalanced-tuple-unpacking" , "inconsistent-return-statements" , "duplicate-code"]
 
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.

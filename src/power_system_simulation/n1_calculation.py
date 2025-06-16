@@ -1,15 +1,31 @@
-"""This module calculates the alternative grid topology when a given line is out of serice"""
+"""N-1 Security Analysis Module.
+
+This module implements N-1 security analysis for power distribution networks.
+It provides functionality for:
+- Contingency analysis of network components
+- Alternative path identification
+- Network reconfiguration assessment
+- Security constraint validation
+
+The module ensures power system reliability by analyzing the impact of
+single component failures and identifying necessary network adjustments.
+
+Authors:
+    Andrei Dobre
+    Stefan Porfir
+    Diana Ionica
+"""
 
 import copy
 import json
 from datetime import datetime, timedelta
+
 import numpy as np
 import pandas as pd
 from power_grid_model import ComponentType
+
 from power_system_simulation import model_processor as calc
 from power_system_simulation.graph_processor import GraphProcessor as gp
-from pathlib import Path
-
 
 
 class IDNotFoundError(Exception):
@@ -137,9 +153,5 @@ def nm_function(
 
         rows.append([alt_id, max_line_load, max_line_load_id, timestamp_max])
 
-    retun_df = pd.DataFrame(rows, columns=["Alternative ID", "Max Loading", "ID_max", "Timestamp_max"])
-    return retun_df
-
-
-
-
+    return_df = pd.DataFrame(rows, columns=["Alternative ID", "Max Loading", "ID_max", "Timestamp_max"])
+    return return_df

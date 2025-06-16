@@ -117,7 +117,7 @@ def test_too_many_sources():
     with open(DATA_PATH / "meta_data_copy.json") as f:
         print(json.load(f))
     with pytest.raises(TooManySources):
-        validate_power_system_simulation(str(PATH_INPUT_NETWORK_DATA), str(DATA_PATH / "meta_data_copy.json"), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(PATH_INPUT_NETWORK_DATA), str(DATA_PATH / "meta_data_copy.json"), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 def test_too_many_transformers():
     meta_data_copy = copy.deepcopy(meta_data)
@@ -125,7 +125,7 @@ def test_too_many_transformers():
     with open(DATA_PATH / "meta_data_copy.json", "w", encoding="utf-8") as f:
         json.dump(meta_data_copy, f, indent=2)
     with pytest.raises(TooManyTransformers):
-        validate_power_system_simulation(str(PATH_INPUT_NETWORK_DATA), str(DATA_PATH / "meta_data_copy.json"), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(PATH_INPUT_NETWORK_DATA), str(DATA_PATH / "meta_data_copy.json"), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 def test_feeder_ids_not_valid():
     meta_data_copy = copy.deepcopy(meta_data)
@@ -133,45 +133,44 @@ def test_feeder_ids_not_valid():
     with open(DATA_PATH / "meta_data_copy.json", "w", encoding="utf-8") as f:
         json.dump(meta_data_copy, f, indent=2)
     with pytest.raises(NotAllFeederIDsareValid):
-        validate_power_system_simulation(str(PATH_INPUT_NETWORK_DATA), str(DATA_PATH / "meta_data_copy.json"), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(PATH_INPUT_NETWORK_DATA), str(DATA_PATH / "meta_data_copy.json"), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 def test_transformer_feeder_not_connected():
     input_data_copy = copy.deepcopy(input_data)
     input_data_copy["line"][4]["from_node"] = 2
     json_serialize_to_file(DATA_PATH / "input_data_copy.json", input_data_copy)
     with pytest.raises(TransformerAndFeedersNotConnected):
-        validate_power_system_simulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 def test_too_few_ev():
     ev_power_profile_copy = ev_power_profile.copy(deep=True)
     ev_power_profile_copy = ev_power_profile_copy.drop(3, axis=1)
     ev_power_profile_copy.to_parquet(DATA_PATH / "ev_power_profile_copy.parquet", engine="pyarrow")
     with pytest.raises(TooFewEVs):
-        validate_power_system_simulation(str(PATH_INPUT_NETWORK_DATA), str(PATH_META_DATA), str(DATA_PATH / "ev_power_profile_copy.parquet"), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(PATH_INPUT_NETWORK_DATA), str(PATH_META_DATA), str(DATA_PATH / "ev_power_profile_copy.parquet"), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 def test_validation_error():
     input_data_copy = copy.deepcopy(input_data)
     input_data_copy["line"][0]["from_node"] = 2
     json_serialize_to_file(DATA_PATH / "input_data_copy.json", input_data_copy)
     with pytest.raises(ValidationException):
-        validate_power_system_simulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 def test_graph_unconnected():
     input_data_copy = copy.deepcopy(input_data)
     input_data_copy["line"][7]["to_status"] = 0
     json_serialize_to_file(DATA_PATH / "input_data_copy.json", input_data_copy)
     with pytest.raises(GraphNotFullyConnectedError):
-        validate_power_system_simulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 def test_timestamps():
     ev_power_profile_copy = ev_power_profile.copy(deep=True)
     new_timestamp = ev_power_profile_copy.index.tolist()
     new_timestamp[0] = pd.Timestamp("2025-01-01 00:10:00")
     ev_power_profile_copy.index = new_timestamp
-    # print(ev_power_profile_copy)
     ev_power_profile_copy.to_parquet(DATA_PATH / "ev_power_profile_copy.parquet", engine="pyarrow")
     with pytest.raises(TimestampsDoNotMatchError):
-        validate_power_system_simulation(str(PATH_INPUT_NETWORK_DATA), str(PATH_META_DATA), str(DATA_PATH / "ev_power_profile_copy.parquet"), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
+        ValidatePowerSystemSimulation(str(PATH_INPUT_NETWORK_DATA), str(PATH_META_DATA), str(DATA_PATH / "ev_power_profile_copy.parquet"), str(PATH_ACTIVE_POWER_PROFILE), str(PATH_REACTIVE_POWER_PROFILE))
 
 # Nu merge inca
 # def test_active_reactive_IDs():
@@ -179,11 +178,11 @@ def test_timestamps():
 #     active_power_profile_copy.rename(columns={3: 4})
 #     active_power_profile_copy.to_parquet(DATA_PATH / "active_power_profile_copy.parquet", engine="pyarrow")
 #     with pytest.raises(LoadIdsDoNotMatchError):
-#         validate_power_system_simulation(str(PATH_INPUT_NETWORK_DATA), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(DATA_PATH / "active_power_profile.parquet"), str(PATH_REACTIVE_POWER_PROFILE))
+#         ValidatePowerSystemSimulation(str(PATH_INPUT_NETWORK_DATA), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE), str(DATA_PATH / "active_power_profile.parquet"), str(PATH_REACTIVE_POWER_PROFILE))
 
 # def test_graph_cycle():
 #     input_data_copy = copy.deepcopy(input_data)
 #     input_data_copy["line"][8]["to_status"] = 1
 #     json_serialize_to_file(DATA_PATH / "input_data_copy.json", input_data_copy)
 #     with pytest.raises(GraphCycleError):
-#         validate_power_system_simulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE))
+#         ValidatePowerSystemSimulation(str(DATA_PATH / "input_data_copy.json"), str(PATH_META_DATA), str(PATH_EV_ACTIVE_POWER_PROFILE))

@@ -1,5 +1,19 @@
-"""
-Module for updating power-system-models and extarcting node and line data
+"""Power System Model Processing Module.
+
+This module provides essential functionality for processing and analyzing power system models.
+It includes utilities for:
+- Line statistics calculation and summarization
+- Node voltage analysis and reporting
+- Power flow result processing
+- Network performance metrics calculation
+
+The module integrates with the Power Grid Model library to provide comprehensive
+analysis capabilities for power distribution networks.
+
+Authors:
+    Andrei Dobre
+    Stefan Porfir
+    Diana Ionica
 """
 
 import numpy as np

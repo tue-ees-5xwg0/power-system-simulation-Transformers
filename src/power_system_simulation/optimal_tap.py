@@ -1,15 +1,30 @@
+"""Optimal Tap Setting Analysis Module.
+
+This module provides functionality for analyzing and optimizing transformer tap settings
+in power distribution networks. It includes capabilities for:
+- Tap position optimization
+- Voltage regulation analysis
+- Network performance assessment
+- Optimal control strategy determination
+
+The module helps in maintaining optimal voltage levels throughout the network
+by determining the best transformer tap positions.
+
+Authors:
+    Andrei Dobre
+    Stefan Porfir
+    Diana Ionica
+"""
+
 from pathlib import Path
 
-import numpy as np
-from power_grid_model.utils import json_deserialize, json_serialize_to_file
+from power_grid_model.utils import json_serialize_to_file
 
 from power_system_simulation import model_processor as calc
 
 
 class InvalidOptimizeInput(Exception):
     """Exception raised when user inputs an invalid optimize_by value."""
-
-    pass
 
 
 def optimal_tap_position(
@@ -32,9 +47,6 @@ def optimal_tap_position(
     """
     if optimize_by not in (0, 1):
         raise InvalidOptimizeInput("Option to optimize by is invalid, please only input 0 or 1.")
-
-    # with open(input_network_data, "r", encoding="utf-8") as fp:
-    #     input_data = json_deserialize(fp.read())
 
     # load input data
     active_power_df, reactive_power_df, input_network_data_dict = calc.load_input_data(
@@ -87,15 +99,3 @@ def optimal_tap_position(
         return average_dev_min_tap_pos
 
     return
-
-
-# from pathlib import Path
-
-# ROOT = Path(__file__).resolve().parents[2]
-# DATA_DIR = ROOT / "tests" / "stefan_data"
-
-# input_network_data = DATA_DIR / "input_network_data.json"
-# active_power_profile_path = DATA_DIR / "active_power_profile.parquet"
-# reactive_power_profile_path = DATA_DIR / "reactive_power_profile.parquet"
-
-# optimal_tap_position(input_network_data , active_power_profile_path,reactive_power_profile_path,0)
