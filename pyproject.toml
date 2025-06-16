@@ -56,7 +56,10 @@ max-line-length = 120
 [tool.pylint.DESIGN]
 max-positional-arguments=8
 max-args = 8
+max-locals = 35
 
+[tool.pylint.'MESSAGES CONTROL']
+disable = ["unbalanced-tuple-unpacking"]
 
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.

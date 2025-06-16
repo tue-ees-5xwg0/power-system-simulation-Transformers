@@ -3,8 +3,7 @@ from pathlib import Path
 import numpy as np
 from power_grid_model.utils import json_deserialize, json_serialize_to_file
 
-from power_system_simulation import assignment2 as calc
-
+from power_system_simulation import model_processor as calc
 
 
 class InvalidOptimizeInput(Exception):
@@ -37,8 +36,10 @@ def optimal_tap_position(
     # with open(input_network_data, "r", encoding="utf-8") as fp:
     #     input_data = json_deserialize(fp.read())
 
-    #load input data 
-    active_power_df, reactive_power_df, input_network_data_dict = calc.load_input_data(active_power_profile_path, reactive_power_profile_path, input_network_data)   
+    # load input data
+    active_power_df, reactive_power_df, input_network_data_dict = calc.load_input_data(
+        active_power_profile_path, reactive_power_profile_path, input_network_data
+    )
 
     path_input_network_data_temp = Path(input_network_data).parent / "input_network_data_temp.json"
 
@@ -55,11 +56,11 @@ def optimal_tap_position(
         json_serialize_to_file(path_input_network_data_temp, input_network_data_dict)
 
         result_power_flow_analysis = calc.run_updated_power_flow_analysis(
-             active_power_df, reactive_power_df, input_network_data_dict
+            active_power_df, reactive_power_df, input_network_data_dict
         )
-        voltage_summary =calc.node_voltage_summary(result_power_flow_analysis, reactive_power_df.index)
+        voltage_summary = calc.node_voltage_summary(result_power_flow_analysis, reactive_power_df.index)
         losses_summary = calc.line_statistics_summary(result_power_flow_analysis, reactive_power_df.index)
-        
+
         average_dev_max_node = (voltage_summary["Max_Voltage_Node"] - 1).abs().mean()
         # total_losses = losses_summary["Total_Loss"].sum()
 
@@ -80,12 +81,13 @@ def optimal_tap_position(
                 average_dev_min_tap_pos = tap_pos
 
     if optimize_by == 0:
-        return total_losses_min_tap_pos   
+        return total_losses_min_tap_pos
 
     if optimize_by == 1:
         return average_dev_min_tap_pos
-    
-    return 
+
+    return
+
 
 # from pathlib import Path
 
@@ -97,4 +99,3 @@ def optimal_tap_position(
 # reactive_power_profile_path = DATA_DIR / "reactive_power_profile.parquet"
 
 # optimal_tap_position(input_network_data , active_power_profile_path,reactive_power_profile_path,0)
-

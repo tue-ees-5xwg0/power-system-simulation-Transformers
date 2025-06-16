@@ -108,21 +108,21 @@ class GraphProcessor:
         vertex1, vertex2 = self.edge_vertex_id_pairs[index]
 
         # create a copy of the graph in order to remove the edge
-        graph_Copy = self._graph.copy()
-        graph_Copy.remove_edge(vertex1, vertex2)
+        graph_copy = self._graph.copy()
+        graph_copy.remove_edge(vertex1, vertex2)
 
         # Find all the connections after the removal
-        connected = list(nx.connected_components(graph_Copy))
+        connected = list(nx.connected_components(graph_copy))
 
         # Find the component that contains the source vertex
         for component in connected:
             if self.source_vertex_id in component:
-                sourceComponent = component
+                source_component = component
                 break
 
         # Return the nodes from the component that does not contain the source
         for component in connected:
-            if component != sourceComponent:
+            if component != source_component:
                 return list(component)
 
         # If both vertices still belong to the same component, return empty list
@@ -206,16 +206,16 @@ class GraphProcessor:
             if not en
         ]
         if disabled_triplets:
-            G_off = nx.Graph()
+            g_off = nx.Graph()
             for u, v, k in disabled_triplets:
-                G_off.add_edge(u, v, id=k)
+                g_off.add_edge(u, v, id=k)
 
             # dashed red edges
-            nx.draw_networkx_edges(G_off, pos, style="dashed", edge_color="red", width=1.5, ax=ax)
+            nx.draw_networkx_edges(g_off, pos, style="dashed", edge_color="red", width=1.5, ax=ax)
 
             # red ID labels on those edges
             off_labels = {(u, v): k for u, v, k in disabled_triplets}
-            nx.draw_networkx_edge_labels(G_off, pos, edge_labels=off_labels, font_size=9, font_color="red", ax=ax)
+            nx.draw_networkx_edge_labels(g_off, pos, edge_labels=off_labels, font_size=9, font_color="red", ax=ax)
 
         ax.set_axis_off()
         fig.tight_layout()

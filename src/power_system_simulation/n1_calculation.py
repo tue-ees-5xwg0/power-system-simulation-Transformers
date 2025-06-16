@@ -1,24 +1,19 @@
+"""This module calculates the alternative grid topology when a given line is out of serice"""
+
 import copy
 import json
-import time
 from datetime import datetime, timedelta
-
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal
-from power_grid_model import CalculationMethod, CalculationType, ComponentType, PowerGridModel, initialize_array
-from power_grid_model.utils import json_deserialize
-from power_grid_model.validation import assert_valid_input_data
-from prettytable import PrettyTable
+from power_grid_model import ComponentType
+from power_system_simulation import model_processor as calc
+from power_system_simulation.graph_processor import GraphProcessor as gp
+from pathlib import Path
 
-from power_system_simulation import assignment2 as calc
-from power_system_simulation.assignment1 import GraphProcessor as gp
 
 
 class IDNotFoundError(Exception):
     """The inserted line ID is not valid."""
-
-    pass
 
 
 class IDNotInt(Exception):
@@ -28,8 +23,6 @@ class IDNotInt(Exception):
 class LineIDNotConnectedOnBothSides(Exception):
     """The inserted line ID is not connected at both sides."""
 
-    pass
-
 
 def nm_function(
     given_lineid: int,
@@ -38,6 +31,32 @@ def nm_function(
     active_power_profile_path: str,
     reactive_power_profile_path: str,
 ) -> list[int]:
+    """
+    Analyze network modification impact by finding alternative line configurations.
+
+    This function:
+    - Loads grid topology and time-series power profiles.
+    - Constructs a GraphProcessor instance based on the network data.
+    - Validates the input line ID.
+    - Identifies feasible alternative lines to replace the given line.
+    - Runs power flow simulations for each alternative.
+    - Returns a DataFrame with the max loading and timestamp per alternative.
+
+    Args:
+        given_lineid (int): The line ID to be tested for alternatives.
+        input_data_path (str): Path to the grid model JSON file.
+        metadata_path (str): Path to metadata containing transformer connections.
+        active_power_profile_path (str): CSV file for active power time series.
+        reactive_power_profile_path (str): CSV file for reactive power time series.
+
+    Returns:
+        pd.DataFrame: A DataFrame with columns:
+            - "Alternative ID": The ID of the enabled alternative line.
+            - "Max Loading": Peak loading observed during simulation.
+            - "ID_max": Line ID with the peak loading.
+            - "Timestamp_max": Time at which the max loading occurred.
+    """
+
     # read input data
     active_power, reactive_power, input_data = calc.load_input_data(
         active_data_path=active_power_profile_path,
@@ -120,3 +139,7 @@ def nm_function(
 
     retun_df = pd.DataFrame(rows, columns=["Alternative ID", "Max Loading", "ID_max", "Timestamp_max"])
     return retun_df
+
+
+
+

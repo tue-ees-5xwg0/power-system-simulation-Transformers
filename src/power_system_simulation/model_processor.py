@@ -1,5 +1,5 @@
 """
-Process power-system-simulation graphs.
+Module for updating power-system-models and extarcting node and line data
 """
 
 import numpy as np
@@ -28,15 +28,28 @@ class TimestampMismatchError(Exception):
     """Raised when indices do not match."""
 
 
-# ──────────────────────────────────────────────────────────
-# 1)  I/O  +  BASIC VALIDATION
-# ──────────────────────────────────────────────────────────
 def load_input_data(
     active_data_path: str,
     reactive_data_path: str,
     model_data_path: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
-    """Read parquet / json files and return active-df, reactive-df, dataset-dict."""
+    """
+    Loads and validates input data required for a power flow simulation.
+
+    Reads parquet files for active and reactive power data, and a JSON file for the static model.
+    Ensures that both power DataFrames have matching shapes, indices, and column IDs.
+
+    Args:
+        active_data_path (str): Path to the active power parquet file.
+        reactive_data_path (str): Path to the reactive power parquet file.
+        model_data_path (str): Path to the static model JSON file.
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame, dict]: A tuple containing:
+            - active_df: DataFrame of active power values.
+            - reactive_df: DataFrame of reactive power values.
+            - dataset: Dictionary representing the deserialized static model.
+    """
     with open(model_data_path, encoding="utf-8") as fp:
         dataset = json_deserialize(fp.read())
 
@@ -53,15 +66,25 @@ def load_input_data(
     return active_df, reactive_df, dataset
 
 
-# ──────────────────────────────────────────────────────────
-# 2)  SOLVER RUN
-# ──────────────────────────────────────────────────────────
 def run_updated_power_flow_analysis(
     active_df: pd.DataFrame,
     reactive_df: pd.DataFrame,
     dataset: dict,
 ) -> dict:
-    """Build update-array, validate, run Newton-Raphson, return raw output dict."""
+    """
+    Executes a power flow simulation using the Newton-Raphson method.
+
+    Builds an update model with active and reactive power inputs, validates the setup,
+    and runs the solver on the given dataset.
+
+    Args:
+        active_df (pd.DataFrame): DataFrame of active power values indexed by timestamp.
+        reactive_df (pd.DataFrame): DataFrame of reactive power values indexed by timestamp.
+        dataset (dict): Static model data for the power grid.
+
+    Returns:
+        dict: Simulation output dictionary containing computed values for each grid component.
+    """
     update_data = initialize_array(DatasetType.update, ComponentType.sym_load, active_df.shape)
     update_data["id"] = active_df.columns.to_numpy()
     update_data["p_specified"] = active_df.to_numpy()
@@ -82,11 +105,23 @@ def run_updated_power_flow_analysis(
     )
 
 
-# ──────────────────────────────────────────────────────────
-# 3)  POST-PROCESSING HELPERS
-# ──────────────────────────────────────────────────────────
 def node_voltage_summary(output: dict, timestamps: pd.Index) -> pd.DataFrame:
-    """Return one DataFrame with max / min voltage per timestamp."""
+    """
+    Extracts summary statistics of node voltages from simulation results.
+
+    Identifies the max and min voltage per timestamp and the corresponding node IDs.
+
+    Args:
+        output (dict): The updated model.
+        timestamps (pd.Index): Timestamps corresponding to the simulation time steps.
+
+    Returns:
+        pd.DataFrame: Summary DataFrame indexed by timestamps, containing:
+            - Max_Voltage
+            - Max_Voltage_Node
+            - Min_Voltage
+            - Min_Voltage_Node
+    """
     node_voltages = output[ComponentType.node]["u_pu"]
     ids = output[ComponentType.node]["id"][0]
 
@@ -107,7 +142,23 @@ def node_voltage_summary(output: dict, timestamps: pd.Index) -> pd.DataFrame:
 
 
 def line_statistics_summary(output: dict, timestamps: pd.Index) -> pd.DataFrame:
-    """Return one DataFrame with energy-loss & loading stats per line."""
+    """
+    Computes per-line statistics from simulation output including loss and loading metrics.
+
+    Calculates energy losses over time and identifies max/min loadings with associated timestamps.
+
+    Args:
+        output (dict): The updated model.
+        timestamps (pd.Index): Time index matching the simulation steps.
+
+    Returns:
+        pd.DataFrame: Summary DataFrame indexed by line IDs, including:
+            - Total_Loss (kWh)
+            - Max_Loading
+            - Max_Loading_Timestamp
+            - Min_Loading
+            - Min_Loading_Timestamp
+    """
     lines = output[ComponentType.line]
     load = output[ComponentType.line]["loading"].T
     p_to = output[ComponentType.line]["p_to"].T
@@ -135,15 +186,26 @@ def line_statistics_summary(output: dict, timestamps: pd.Index) -> pd.DataFrame:
     return line_df
 
 
-# ──────────────────────────────────────────────────────────
-# 4)  HIGH-LEVEL WRAPPER
-# ──────────────────────────────────────────────────────────
 def data_processing(
     active_data_path: str,
     reactive_data_path: str,
     model_data_path: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Run full pipeline and return node- & line-level DataFrames."""
+    """
+    Executes the full processing pipeline for power grid simulation.
+
+    Handles data loading, simulation execution, and post-processing into summaries.
+
+    Args:
+        active_data_path (str): File path to active power input data.
+        reactive_data_path (str): File path to reactive power input data.
+        model_data_path (str): File path to the static power grid model (JSON format).
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame]: A pair of DataFrames:
+            - node_df: Node-level voltage summary statistics.
+            - line_df: Line-level energy loss and loading statistics.
+    """
     active_df, reactive_df, dataset = load_input_data(active_data_path, reactive_data_path, model_data_path)
     output = run_updated_power_flow_analysis(active_df, reactive_df, dataset)
     node_df = node_voltage_summary(output, active_df.index)

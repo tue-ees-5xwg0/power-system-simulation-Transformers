@@ -1,3 +1,4 @@
+# pylint: disable= import-error, no-name-in-module
 """
 This module contains tests for the power system simulation assignment 2.
 """
@@ -5,7 +6,7 @@ This module contains tests for the power system simulation assignment 2.
 import pandas as pd
 import pytest
 
-from power_system_simulation.assignment2 import (
+from power_system_simulation.model_processor import (
     IDsDoNotMatchError,
     TimestampMismatchError,
     ValidationException,
@@ -33,7 +34,7 @@ def test_load_input_data():
     Test the load_input_data function for correct loading and validation of input data.
     This test checks that the active and reactive dataframes have the same shape, index, and columns.
     """
-    active_df, reactive_df,_ = load_input_data(ACTIVE_DATA_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
+    active_df, reactive_df, _ = load_input_data(ACTIVE_DATA_PATH, REACTIVE_DATA_PATH, MODEL_DATA)
     assert active_df.shape == reactive_df.shape, "Active and reactive data must have the same shape."
     assert active_df.index.equals(reactive_df.index), "Active and reactive data must share the same index."
     assert active_df.columns.equals(reactive_df.columns), "Active and reactive data must share the same column IDs."
